@@ -17,7 +17,7 @@ company = (Path(rsc_dir, "company20251015.csv"))
 """
 全国の路線を考える前に、小規模の問題としてJR北海道の路線を抽出し、作成する
 """
-def preprocess_jr_hokkaido() -> tuple[pd.DataFrame, pd.DataFrame]:
+def preprocess_jr_hokkaido(line: pd.DataFrame, station: pd.DataFrame, join: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # JR北海道の路線コードを抽出する JR北海道...company_cd == 1 e_status == 0 運用中のみ
     jrh_lines = line[(line["company_cd"] == 1) & (line["e_status"] == 0)]
     # 海峡線は貨物駅のため削除
@@ -60,13 +60,38 @@ def visualize_graph(stations: pd.DataFrame, join: pd.DataFrame):
 
     # グラフの描画
     plt.figure(figsize=(10, 10))
-    nx.draw_networkx(G, pos, with_labels=True, node_size=50, font_size=4, font_family='IPAexGothic')
+    nx.draw_networkx(G, pos, with_labels=True, node_size=50, font_size=8, font_family='IPAexGothic')
     plt.title("JR北海道の路線図")
     plt.show()
 
+"""
+辺を減らすために，接続駅と終点駅を抽出する
+"""
+def extract_key_stations(stations: pd.DataFrame, join: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    # グラフの作成
+    G = nx.Graph()
+    G.add_nodes_from(stations["station_cd"])
+    for station_cd1, station_cd2 in join[["station_cd1", "station_cd2"]].itertuples(index=False):
+        G.add_edge(station_cd1, station_cd2)
+
+    # 接続駅と終点駅の抽出
+    key_stations = [node for node, degree in G.degree() if degree not in (0,2)]
+    key_stations_df = stations[stations["station_cd"].isin(key_stations)]
+
+    # key_stations に基づいて join をフィルタリング
+    key_join = join[
+        (join["station_cd1"].isin(key_stations)) |
+        (join["station_cd2"].isin(key_stations))
+    ]
+
+    return key_stations_df, key_join
+
 def main():
-    jrh, jrh_join = preprocess_jr_hokkaido()
-    visualize_graph(jrh, jrh_join)
+    jrh, jrh_join = preprocess_jr_hokkaido(line, station, join)
+    # visualize_graph(jrh, jrh_join)
+
+    key_stations, key_join = extract_key_stations(jrh, jrh_join)
+    visualize_graph(key_stations, key_join)
 
 if __name__ == "__main__":
     main()
