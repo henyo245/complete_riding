@@ -17,8 +17,8 @@ company = (Path(rsc_dir, "company20251015.csv"))
 """
 全国の路線を考える前に、小規模の問題としてJR北海道の路線を抽出し、作成する
 """
-# JR北海道の路線コードを抽出する JR北海道...company_cd == 1
-jrh_lines = line[line["company_cd"] == 1]
+# JR北海道の路線コードを抽出する JR北海道...company_cd == 1 e_status == 0 運用中のみ
+jrh_lines = line[(line["company_cd"] == 1) & (line["e_status"] == 0)]
 # 海峡線は貨物駅のため削除
 jrh_lines = jrh_lines[jrh_lines["line_cd"]!=11118]
 
