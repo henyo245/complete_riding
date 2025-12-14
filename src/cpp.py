@@ -94,9 +94,25 @@ def count_vertices_degree(adj_matrix):
         degree_counts[i] = degree
     return degree_counts
 
+def get_odd_degree_vertices(degree_count):
+    return [i for i, deg in enumerate(degree_count) if deg % 2 == 1]
+
 # 完全マッチングの最小経路を求める
 def compute_minimum_weight_perfect_matching(adj_matrix: list, odd_vertices):
     num_odd = len(odd_vertices)
+
+    # 完全マッチングが存在しない場合の処理
+    # 頂点が0個(一直線など，既にオイラー路が存在する場合)
+    if num_odd == 0:
+        return [], 0
+
+    if num_odd % 2 == 1:
+        raise ValueError("完全マッチングが存在しません（頂点が奇数個）")
+
+    # 頂点が2個の場合は直接結ぶ
+    if num_odd == 2:
+        u, v = odd_vertices
+        return [(u, v)], adj_matrix[u][v]
     
     # 各ペアリングについて重み合計を計算
     weight = [[0] * num_odd for _ in range(num_odd)]
@@ -161,7 +177,7 @@ def main():
 
     # 次数が奇数の頂点をリスト化
     degree_count = count_vertices_degree(graph_matrix)
-    odd_vertices = [i for i, deg in enumerate(degree_count) if deg % 2 == 1]
+    odd_vertices = get_odd_degree_vertices(degree_count)
     print("次数が奇数の頂点:", odd_vertices)
 
     result_pairs, best_cost = compute_minimum_weight_perfect_matching(graph_matrix, odd_vertices)
@@ -173,6 +189,7 @@ def main():
     print("全エッジの重み合計 + 最小完全マッチングの重み合計 =", total_edge_weight)
 
     visualize_graph_from_adjmatrix(graph_matrix)
+
 
 if __name__ == "__main__":
     main()
