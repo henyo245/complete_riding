@@ -98,22 +98,20 @@ def get_odd_degree_vertices(degree_count):
     return [i for i, deg in enumerate(degree_count) if deg % 2 == 1]
 
 # 完全マッチングの最小経路を求める
-def compute_minimum_weight_perfect_matching(adj_matrix: list, odd_vertices):
+def compute_minimum_weight_perfect_matching_bruteforce(adj_matrix: list, odd_vertices):
+    """
+    Brute-force version: 全ての並べ替えを試して最小化する（小規模向け）。
+    返り値は (pairs, cost) で、pairs は元の頂点インデックスのタプルのリスト。
+    """
     num_odd = len(odd_vertices)
 
     # 完全マッチングが存在しない場合の処理
-    # 頂点が0個(一直線など，既にオイラー路が存在する場合)
     if num_odd == 0:
         return [], 0
 
     if num_odd % 2 == 1:
         raise ValueError("完全マッチングが存在しません（頂点が奇数個）")
 
-    # 頂点が2個の場合は直接結ぶ
-    if num_odd == 2:
-        u, v = odd_vertices
-        return [(u, v)], adj_matrix[u][v]
-    
     # 各ペアリングについて重み合計を計算
     weight = [[0] * num_odd for _ in range(num_odd)]
     for i in range(num_odd):
@@ -122,34 +120,90 @@ def compute_minimum_weight_perfect_matching(adj_matrix: list, odd_vertices):
             v = odd_vertices[j]
             weight[i][j] = adj_matrix[u][v]
             weight[j][i] = adj_matrix[u][v]
-    
-    # 重みが最小となる完全マッチングを計算
-    # 最小コストの記録
+
+    # 最小コスト探索（全探索）
     best_cost = float('inf')
     best_pairs = None
 
     first = 0
-    others = list(range(1, num_odd))  # index のリストとして扱う
+    others = list(range(1, num_odd))
 
-    # 全ての並べ替えを試す
     for perm in itertools.permutations(others):
-        # ペアリングの作成
         pairs = [(first, perm[0])]
         for i in range(1, num_odd // 2):
             pairs.append((perm[2 * i - 1], perm[2 * i]))
 
-        # コスト計算
         cost = sum(weight[u][v] for u, v in pairs)
-
-        # 最小コストの更新
         if cost < best_cost:
             best_cost = cost
             best_pairs = pairs
-        
-    # index → 実際の odd_vertices の番号へ変換して返す
-    result_pairs = [(odd_vertices[i], odd_vertices[j]) for i, j in best_pairs]
 
-    return result_pairs, best_cost   
+    result_pairs = [(odd_vertices[i], odd_vertices[j]) for i, j in best_pairs]
+    return result_pairs, best_cost
+
+
+def compute_minimum_weight_perfect_matching_fast(adj_matrix: list, odd_vertices):
+    """
+    高速版: NetworkX の min_weight_matching を使う（大きな頂点数向け）。
+    """
+    num_odd = len(odd_vertices)
+    if num_odd == 0:
+        return [], 0
+    if num_odd % 2 == 1:
+        raise ValueError("完全マッチングが存在しません（頂点が奇数個）")
+    if num_odd == 2:
+        u, v = odd_vertices
+        return [(u, v)], adj_matrix[u][v]
+
+    # グラフを作成（ノードは元の頂点番号）
+    G = nx.Graph()
+    for v in odd_vertices:
+        G.add_node(v)
+
+    # 大きな重みで unreachable を表す
+    BIG = 10 ** 12
+    for i in range(num_odd):
+        for j in range(i + 1, num_odd):
+            u = odd_vertices[i]
+            v = odd_vertices[j]
+            w = adj_matrix[u][v]
+            if w == math.inf or (isinstance(w, float) and math.isnan(w)):
+                w = BIG
+            G.add_edge(u, v, weight=w)
+
+    matching = nx.algorithms.matching.min_weight_matching(G, maxcardinality=True, weight='weight')
+    result_pairs = [tuple(sorted(edge)) for edge in matching]
+    total_cost = 0
+    for u, v in result_pairs:
+        w = adj_matrix[u][v]
+        if w == math.inf or (isinstance(w, float) and math.isnan(w)):
+            total_cost += BIG
+        else:
+            total_cost += w
+
+    return result_pairs, total_cost
+
+
+def compute_minimum_weight_perfect_matching(adj_matrix: list, odd_vertices, method: str = 'auto'):
+    """
+    統一インターフェース: method を 'auto'/'fast'/'bruteforce' で選択。
+    - 'auto' : 頂点数に応じて自動選択（小規模は bruteforce、大規模は fast）
+    - 'fast' : NetworkX ベースの高速実装
+    - 'bruteforce' : 全探索（既存の実装）
+    """
+    num_odd = len(odd_vertices)
+    if method == 'auto':
+        # 閾値は経験則。num_odd <= 10 程度なら全探索も可能
+        if num_odd <= 10:
+            return compute_minimum_weight_perfect_matching_bruteforce(adj_matrix, odd_vertices)
+        else:
+            return compute_minimum_weight_perfect_matching_fast(adj_matrix, odd_vertices)
+    elif method == 'fast':
+        return compute_minimum_weight_perfect_matching_fast(adj_matrix, odd_vertices)
+    elif method == 'bruteforce':
+        return compute_minimum_weight_perfect_matching_bruteforce(adj_matrix, odd_vertices)
+    else:
+        raise ValueError("Unknown method for matching: choose 'auto', 'fast', or 'bruteforce'")
 
 def sum_all_edges_undirected(adj_matrix):
     """
@@ -167,7 +221,7 @@ def sum_all_edges_undirected(adj_matrix):
 def main():
     # 無向グラフの作成
     v_num = random.randint(2, 5)
-    e_num = random.randint(1, v_num * (v_num - 1) // 2)
+    e_num = random.randint(v_num -1, v_num * (v_num - 1) // 2)
     graph_matrix = create_graph_matrix(v_num, e_num)
 
     print(f"頂点数: {v_num}, エッジ数: {e_num}")
