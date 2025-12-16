@@ -52,7 +52,6 @@ def test_compute_minimum_weight_perfect_matching_bruteforce():
     assert best_cost == expected_cost
 
 
-# 完全マッチングが存在しない場合は，ペアなし，重み0
 def test_returns_empty_on_no_odd_vertices():
     """
     完全マッチングが存在しない場合は,ペアなし,重み0(全ての頂点がちょうど1本の辺に含まれる場合)
