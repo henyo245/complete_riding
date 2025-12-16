@@ -8,11 +8,20 @@ from cpp import (
 
 
 def test_count_vertices_degree():
-    adj_matrix = [[0, 1, 0, 1], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 1, 0]]
+    adj_matrix = [
+        [0, 1, 0, 1], 
+        [1, 0, 1, 0], 
+        [0, 1, 0, 1], 
+        [1, 0, 1, 0]
+    ]
     expected_degrees = [2, 2, 2, 2]
     assert count_vertices_degree(adj_matrix) == expected_degrees
 
-    adj_matrix = [[0, 1, 1], [1, 0, 0], [1, 0, 0]]
+    adj_matrix = [
+        [0, 1, 1], 
+        [1, 0, 0], 
+        [1, 0, 0]
+    ]
     expected_degrees = [2, 1, 1]
     assert count_vertices_degree(adj_matrix) == expected_degrees
 
@@ -24,7 +33,12 @@ def test_get_odd_degree_vertices():
 
 
 def test_compute_minimum_weight_perfect_matching_bruteforce():
-    adj_matrix = [[0, 10, 15, 20], [10, 0, 35, 25], [15, 35, 0, 30], [20, 25, 30, 0]]
+    adj_matrix = [
+        [0, 10, 15, 20], 
+        [10, 0, 35, 25], 
+        [15, 35, 0, 30], 
+        [20, 25, 30, 0]
+    ]
     odd_vertices = [0, 1, 2, 3]
     expected_pairs = [(0, 1), (2, 3)]
     expected_cost = 10 + 30
@@ -41,7 +55,11 @@ def test_returns_empty_on_no_odd_vertices():
     """
     完全マッチングが存在しない場合は,ペアなし,重み0(全ての頂点がちょうど1本の辺に含まれる場合)
     """
-    adj_matrix = [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
+    adj_matrix = [
+        [0, 1, 0], 
+        [1, 0, 1], 
+        [0, 1, 0]
+    ]
     odd_vertices = []
     expected_pairs = []
     expected_cost = 0
