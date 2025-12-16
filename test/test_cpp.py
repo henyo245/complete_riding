@@ -4,6 +4,8 @@ from cpp import (
     compute_minimum_weight_perfect_matching_bruteforce,
     get_odd_degree_vertices,
     sum_all_edges_undirected,
+    calculate_shortest_path_matrix,
+    visualize_graph_from_adjmatrix,
 )
 
 
@@ -79,3 +81,25 @@ def test_sum_all_edges_undirected():
     ]
     expected_sum = 10 + 20 + 30 + 40
     assert sum_all_edges_undirected(adj_matrix) == expected_sum
+
+
+def test_calculate_shortest_path_matrix():
+    """
+    隣接行列から全頂点間の最短距離行列を計算
+    """
+    inf = float("inf")
+    adj_matrix = [
+        [0, 3, inf, 7],
+        [3, 0, 2, inf],
+        [inf, 2, 0, 1],
+        [7, inf, 1, 0],
+    ]
+    # visualize_graph_from_adjmatrix(adj_matrix)
+    expected_shortest_paths = [
+        [0, 3, 5, 6],
+        [3, 0, 2, 3],
+        [5, 2, 0, 1],
+        [6, 3, 1, 0],
+    ]
+    result = calculate_shortest_path_matrix(adj_matrix)
+    assert result == expected_shortest_paths

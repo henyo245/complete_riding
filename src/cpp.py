@@ -101,6 +101,25 @@ def get_odd_degree_vertices(degree_count):
     return [i for i, deg in enumerate(degree_count) if deg % 2 == 1]
 
 
+def calculate_shortest_path_matrix(adj_matrix: list) -> list:
+    """
+    隣接行列から全頂点間の最短距離行列を計算（Floyd-Warshallアルゴリズム）
+    adj_matrix: 隣接行列 (2次元リスト)
+    戻り値: 最短距離行列 (2次元リスト)
+    """
+    v_num = len(adj_matrix)
+    # 初期化
+    graph = [[adj_matrix[i][j] for j in range(v_num)] for i in range(v_num)]
+
+    # Floyd-Warshall アルゴリズム
+    for k in range(v_num):
+        for i in range(v_num):
+            for j in range(v_num):
+                if graph[i][k] + graph[k][j] < graph[i][j]:
+                    graph[i][j] = graph[i][k] + graph[k][j]
+    return graph
+
+
 # 完全マッチングの最小経路を求める
 def compute_minimum_weight_perfect_matching_bruteforce(adj_matrix: list, odd_vertices):
     """
