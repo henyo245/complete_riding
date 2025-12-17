@@ -89,6 +89,49 @@ class CPP:
         result_pairs = [(odd_vertices[i], odd_vertices[j]) for i, j in best_pairs]
         return result_pairs, best_cost
 
+    def compute_minimum_weight_perfect_matching_fast(self, adj_matrix: list, odd_vertices):
+        """
+        高速版: NetworkX の min_weight_matching を使う（大きな頂点数向け）。
+        """
+        num_odd = len(odd_vertices)
+        if num_odd == 0:
+            return [], 0
+        if num_odd % 2 == 1:
+            raise ValueError("完全マッチングが存在しません（頂点が奇数個）")
+        if num_odd == 2:
+            u, v = odd_vertices
+            return [(u, v)], adj_matrix[u][v]
+
+        # グラフを作成（ノードは元の頂点番号）
+        G = nx.Graph()
+        for v in odd_vertices:
+            G.add_node(v)
+
+        # 大きな重みで unreachable を表す
+        BIG = 10**12
+        for i in range(num_odd):
+            for j in range(i + 1, num_odd):
+                u = odd_vertices[i]
+                v = odd_vertices[j]
+                w = adj_matrix[u][v]
+                if w == math.inf or (isinstance(w, float) and math.isnan(w)):
+                    w = BIG
+                G.add_edge(u, v, weight=w)
+
+        matching = nx.algorithms.matching.min_weight_matching(
+            G, weight="weight"
+        )
+        result_pairs = [tuple(sorted(edge)) for edge in matching]
+        total_cost = 0
+        for u, v in result_pairs:
+            w = adj_matrix[u][v]
+            if w == math.inf or (isinstance(w, float) and math.isnan(w)):
+                total_cost += BIG
+            else:
+                total_cost += w
+
+        return result_pairs, total_cost
+
     def sum_all_edges_undirected(self, adj_matrix: list[list]) -> int:
         """
         無向グラフの全エッジの重み合計を計算
@@ -201,52 +244,6 @@ def visualize_graph_from_adjmatrix(adj_matrix, seed=0):
 
     plt.axis("off")
     plt.show()
-
-
-
-
-def compute_minimum_weight_perfect_matching_fast(adj_matrix: list, odd_vertices):
-    """
-    高速版: NetworkX の min_weight_matching を使う（大きな頂点数向け）。
-    """
-    num_odd = len(odd_vertices)
-    if num_odd == 0:
-        return [], 0
-    if num_odd % 2 == 1:
-        raise ValueError("完全マッチングが存在しません（頂点が奇数個）")
-    if num_odd == 2:
-        u, v = odd_vertices
-        return [(u, v)], adj_matrix[u][v]
-
-    # グラフを作成（ノードは元の頂点番号）
-    G = nx.Graph()
-    for v in odd_vertices:
-        G.add_node(v)
-
-    # 大きな重みで unreachable を表す
-    BIG = 10**12
-    for i in range(num_odd):
-        for j in range(i + 1, num_odd):
-            u = odd_vertices[i]
-            v = odd_vertices[j]
-            w = adj_matrix[u][v]
-            if w == math.inf or (isinstance(w, float) and math.isnan(w)):
-                w = BIG
-            G.add_edge(u, v, weight=w)
-
-    matching = nx.algorithms.matching.min_weight_matching(
-        G, maxcardinality=True, weight="weight"
-    )
-    result_pairs = [tuple(sorted(edge)) for edge in matching]
-    total_cost = 0
-    for u, v in result_pairs:
-        w = adj_matrix[u][v]
-        if w == math.inf or (isinstance(w, float) and math.isnan(w)):
-            total_cost += BIG
-        else:
-            total_cost += w
-
-    return result_pairs, total_cost
 
 
 def compute_minimum_weight_perfect_matching(

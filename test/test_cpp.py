@@ -36,16 +36,35 @@ def test_get_odd_degree_vertices():
 def test_compute_minimum_weight_perfect_matching_bruteforce():
     adj_matrix = [
         [0, 10, 15, 20], 
-        [10, 0, 35, 25], 
-        [15, 35, 0, 30], 
-        [20, 25, 30, 0]
+        [10, 0, 35, 30], 
+        [15, 35, 0, 25], 
+        [20, 30, 25, 0]
     ]
     odd_vertices = [0, 1, 2, 3]
     expected_pairs = [(0, 1), (2, 3)]
-    expected_cost = 10 + 30
+    expected_cost = 10 + 25
 
     cpp = CPP()
     result_pairs, best_cost = cpp.compute_minimum_weight_perfect_matching_bruteforce(
+        adj_matrix, odd_vertices
+    )
+    assert set(result_pairs) == set(expected_pairs)
+    assert best_cost == expected_cost
+
+
+def test_compute_minimum_weight_perfect_matching_fast():
+    adj_matrix = [
+        [0, 10, 15, 20], 
+        [10, 0, 35, 30], 
+        [15, 35, 0, 25], 
+        [20, 30, 25, 0]
+    ]
+    odd_vertices = [0, 1, 2, 3]
+    expected_pairs = [(0, 1), (2, 3)]
+    expected_cost = 10 + 25
+
+    cpp = CPP()
+    result_pairs, best_cost = cpp.compute_minimum_weight_perfect_matching_fast(
         adj_matrix, odd_vertices
     )
     assert set(result_pairs) == set(expected_pairs)
