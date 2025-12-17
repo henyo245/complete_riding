@@ -288,27 +288,19 @@ def main():
     graph_matrix = create_graph_matrix(v_num, e_num)
 
     print(f"頂点数: {v_num}, エッジ数: {e_num}")
-    graph_matrix = create_graph_matrix(v_num, e_num)
     for row in graph_matrix:
         print(" ".join(f"{x:>3}" for x in row))
 
-    # 次数が奇数の頂点をリスト化
-    degree_count = count_vertices_degree(graph_matrix)
-    odd_vertices = get_odd_degree_vertices(degree_count)
-    print("次数が奇数の頂点:", odd_vertices)
+    cpp = CPP()
 
-    result_pairs, best_cost = compute_minimum_weight_perfect_matching(
-        graph_matrix, odd_vertices
-    )
-    print("最小完全マッチングのペア:", result_pairs)
-    print("最小完全マッチングの重み合計:", best_cost)
-
-    # 最小距離和を計算
-    total_edge_weight = sum_all_edges_undirected(graph_matrix) + best_cost
+    shortest_paths, pairs, total_edge_weight = cpp.cpp_pipeline(graph_matrix)
+    print("最短距離行列:")
+    for row in shortest_paths:
+        print(" ".join(f"{x:>3}" for x in row))
+    print("最小完全マッチングのペア:", pairs)
     print("全エッジの重み合計 + 最小完全マッチングの重み合計 =", total_edge_weight)
 
     visualize_graph_from_adjmatrix(graph_matrix)
-
 
 if __name__ == "__main__":
     main()
