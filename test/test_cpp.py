@@ -107,3 +107,32 @@ def test_calculate_shortest_path_matrix():
     cpp = CPP()
     result = cpp.calculate_shortest_path_matrix(adj_matrix)
     assert result == expected_shortest_paths
+
+def test_cpp_pipeline():
+    """
+    cpp.py の主要関数を統合的にテスト
+    """
+    inf = float("inf")
+    adj_matrix = [
+        [0, 3, inf, 7],
+        [3, 0, 2, 5],
+        [inf, 2, 0, 1],
+        [7, 5, 1, 0],
+    ]
+    # visualize_graph_from_adjmatrix(adj_matrix)
+
+    expected_shortest_paths = [
+        [0, 3, 5, 6],
+        [3, 0, 2, 3],
+        [5, 2, 0, 1],
+        [6, 3, 1, 0],
+    ]
+    expected_pairs = [(1, 3)]
+    expected_total_edge_weight = 21
+    cpp = CPP()
+
+    # 距離行列を入力すると，最短距離，完全マッチングのペア, 全頂点間の最短距離行列を返す pipeline をテスト
+    shortest_paths, pairs, total_edge_weight = cpp.cpp_pipeline(adj_matrix)
+    assert shortest_paths == expected_shortest_paths
+    assert set(pairs) == set(expected_pairs)
+    assert total_edge_weight == expected_total_edge_weight

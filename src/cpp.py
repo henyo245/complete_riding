@@ -101,6 +101,32 @@ class CPP:
                 if adj_matrix[i][j] != 0 and adj_matrix[i][j] != float("inf"):
                     total += adj_matrix[i][j]
         return total
+    
+    def cpp_pipeline(self, adj_matrix: list[list]):
+        v_num = len(adj_matrix)
+        e_num = sum(
+            1
+            for i in range(v_num)
+            for j in range(i + 1, v_num)
+            if adj_matrix[i][j] != 0 and adj_matrix[i][j] != math.inf
+        )
+
+        # 最短距離行列を作成
+        shortest_path_matrix = self.calculate_shortest_path_matrix(adj_matrix)
+
+        # 次数が奇数の頂点をリスト化
+        degree_count = self.count_vertices_degree(adj_matrix)
+        odd_vertices = self.get_odd_degree_vertices(degree_count)
+
+        result_pairs, best_cost = self.compute_minimum_weight_perfect_matching_bruteforce(
+            shortest_path_matrix, odd_vertices
+        )
+
+        # 最小距離和を計算
+        total_edge_weight = self.sum_all_edges_undirected(adj_matrix) + best_cost
+
+        return shortest_path_matrix, result_pairs, total_edge_weight        
+        
 
 def create_graph_matrix(v_num, e_num):
     INF = math.inf
