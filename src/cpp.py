@@ -46,7 +46,7 @@ class CPP:
 
 
     # 完全マッチングの最小経路を求める
-    def compute_minimum_weight_perfect_matching_bruteforce(self, adj_matrix: list[list], odd_vertices: list[int]):
+    def compute_minimum_weight_perfect_matching_bruteforce(self, adj_matrix: list[list], odd_vertices: list[int]) -> tuple[list[tuple[int, int]], float|int]:
         """
         Brute-force version: 全ての並べ替えを試して最小化する（小規模向け）。
         返り値は (pairs, cost) で、pairs は元の頂点インデックスのタプルのリスト。
@@ -145,6 +145,37 @@ class CPP:
                     total += adj_matrix[i][j]
         return total
     
+    def compute_minimum_weight_perfect_matching(
+        self, adj_matrix: list, odd_vertices, method: str = "auto"
+    ):
+        """
+        統一インターフェース: method を 'auto'/'fast'/'bruteforce' で選択。
+        - 'auto' : 頂点数に応じて自動選択（小規模は bruteforce、大規模は fast）
+        - 'fast' : NetworkX ベースの高速実装
+        - 'bruteforce' : 全探索（既存の実装）
+        """
+        num_odd = len(odd_vertices)
+        if method == "auto":
+            # 閾値は経験則。num_odd <= 10 程度なら全探索も可能
+            if num_odd <= 10:
+                return self.compute_minimum_weight_perfect_matching_bruteforce(
+                    adj_matrix, odd_vertices
+                )
+            else:
+                return self.compute_minimum_weight_perfect_matching_fast(
+                    adj_matrix, odd_vertices
+                )
+        elif method == "fast":
+            return self.compute_minimum_weight_perfect_matching_fast(adj_matrix, odd_vertices)
+        elif method == "bruteforce":
+            return self.compute_minimum_weight_perfect_matching_bruteforce(
+                adj_matrix, odd_vertices
+            )
+        else:
+            raise ValueError(
+                "Unknown method for matching: choose 'auto', 'fast', or 'bruteforce'"
+            )
+        
     def cpp_pipeline(self, adj_matrix: list[list]):
         v_num = len(adj_matrix)
         e_num = sum(
@@ -161,7 +192,7 @@ class CPP:
         degree_count = self.count_vertices_degree(adj_matrix)
         odd_vertices = self.get_odd_degree_vertices(degree_count)
 
-        result_pairs, best_cost = self.compute_minimum_weight_perfect_matching_bruteforce(
+        result_pairs, best_cost = self.compute_minimum_weight_perfect_matching(
             shortest_path_matrix, odd_vertices
         )
 
@@ -244,38 +275,6 @@ def visualize_graph_from_adjmatrix(adj_matrix, seed=0):
 
     plt.axis("off")
     plt.show()
-
-
-def compute_minimum_weight_perfect_matching(
-    adj_matrix: list, odd_vertices, method: str = "auto"
-):
-    """
-    統一インターフェース: method を 'auto'/'fast'/'bruteforce' で選択。
-    - 'auto' : 頂点数に応じて自動選択（小規模は bruteforce、大規模は fast）
-    - 'fast' : NetworkX ベースの高速実装
-    - 'bruteforce' : 全探索（既存の実装）
-    """
-    num_odd = len(odd_vertices)
-    if method == "auto":
-        # 閾値は経験則。num_odd <= 10 程度なら全探索も可能
-        if num_odd <= 10:
-            return compute_minimum_weight_perfect_matching_bruteforce(
-                adj_matrix, odd_vertices
-            )
-        else:
-            return compute_minimum_weight_perfect_matching_fast(
-                adj_matrix, odd_vertices
-            )
-    elif method == "fast":
-        return compute_minimum_weight_perfect_matching_fast(adj_matrix, odd_vertices)
-    elif method == "bruteforce":
-        return compute_minimum_weight_perfect_matching_bruteforce(
-            adj_matrix, odd_vertices
-        )
-    else:
-        raise ValueError(
-            "Unknown method for matching: choose 'auto', 'fast', or 'bruteforce'"
-        )
 
 
 def main():
