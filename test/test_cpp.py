@@ -1,10 +1,6 @@
 import pytest
+from cpp import CPP
 from cpp import (
-    count_vertices_degree,
-    compute_minimum_weight_perfect_matching_bruteforce,
-    get_odd_degree_vertices,
-    sum_all_edges_undirected,
-    calculate_shortest_path_matrix,
     visualize_graph_from_adjmatrix,
 )
 
@@ -17,7 +13,8 @@ def test_count_vertices_degree():
         [1, 0, 1, 0]
     ]
     expected_degrees = [2, 2, 2, 2]
-    assert count_vertices_degree(adj_matrix) == expected_degrees
+    cpp = CPP()
+    assert cpp.count_vertices_degree(adj_matrix) == expected_degrees
 
     adj_matrix = [
         [0, 1, 1], 
@@ -25,13 +22,15 @@ def test_count_vertices_degree():
         [1, 0, 0]
     ]
     expected_degrees = [2, 1, 1]
-    assert count_vertices_degree(adj_matrix) == expected_degrees
+    cpp = CPP()
+    assert cpp.count_vertices_degree(adj_matrix) == expected_degrees
 
 
 def test_get_odd_degree_vertices():
     degree_count = [2, 3, 4, 1, 0]
     expected_odd_vertices = [1, 3]
-    assert get_odd_degree_vertices(degree_count) == expected_odd_vertices
+    cpp = CPP()
+    assert cpp.get_odd_degree_vertices(degree_count) == expected_odd_vertices
 
 
 def test_compute_minimum_weight_perfect_matching_bruteforce():
@@ -45,7 +44,8 @@ def test_compute_minimum_weight_perfect_matching_bruteforce():
     expected_pairs = [(0, 1), (2, 3)]
     expected_cost = 10 + 30
 
-    result_pairs, best_cost = compute_minimum_weight_perfect_matching_bruteforce(
+    cpp = CPP()
+    result_pairs, best_cost = cpp.compute_minimum_weight_perfect_matching_bruteforce(
         adj_matrix, odd_vertices
     )
     assert set(result_pairs) == set(expected_pairs)
@@ -64,7 +64,9 @@ def test_returns_empty_on_no_odd_vertices():
     odd_vertices = []
     expected_pairs = []
     expected_cost = 0
-    result_pairs, best_cost = compute_minimum_weight_perfect_matching_bruteforce(
+
+    cpp = CPP()
+    result_pairs, best_cost = cpp.compute_minimum_weight_perfect_matching_bruteforce(
         adj_matrix, odd_vertices
     )
     assert result_pairs == expected_pairs
@@ -79,7 +81,9 @@ def test_sum_all_edges_undirected():
         [20, 0, 40, 0],
     ]
     expected_sum = 10 + 20 + 30 + 40
-    assert sum_all_edges_undirected(adj_matrix) == expected_sum
+
+    cpp = CPP()
+    assert cpp.sum_all_edges_undirected(adj_matrix) == expected_sum
 
 
 def test_calculate_shortest_path_matrix():
@@ -100,5 +104,6 @@ def test_calculate_shortest_path_matrix():
         [5, 2, 0, 1],
         [6, 3, 1, 0],
     ]
-    result = calculate_shortest_path_matrix(adj_matrix)
+    cpp = CPP()
+    result = cpp.calculate_shortest_path_matrix(adj_matrix)
     assert result == expected_shortest_paths

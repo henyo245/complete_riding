@@ -4,6 +4,103 @@ import matplotlib.pyplot as plt
 import math
 import itertools
 
+class CPP:
+    def count_vertices_degree(self, adj_matrix) -> list:
+        """
+        adj_matrix: 隣接行列 (2次元リスト)
+        戻り値: 各頂点の次数を格納したリスト
+        """
+        v_num = len(adj_matrix)
+        degree_counts = [0] * v_num
+
+        for i in range(v_num):
+            degree = 0
+            for j in range(v_num):
+                if adj_matrix[i][j] != 0 and adj_matrix[i][j] != math.inf:
+                    degree += 1
+            degree_counts[i] = degree
+        return degree_counts
+
+
+    def get_odd_degree_vertices(self, degree_count):
+        return [i for i, deg in enumerate(degree_count) if deg % 2 == 1]
+
+
+    def calculate_shortest_path_matrix(self, adj_matrix: list) -> list:
+        """
+        隣接行列から全頂点間の最短距離行列を計算（Floyd-Warshallアルゴリズム）
+        adj_matrix: 隣接行列 (2次元リスト)
+        戻り値: 最短距離行列 (2次元リスト)
+        """
+        v_num = len(adj_matrix)
+        # 初期化
+        graph = [[adj_matrix[i][j] for j in range(v_num)] for i in range(v_num)]
+
+        # Floyd-Warshall アルゴリズム
+        for k in range(v_num):
+            for i in range(v_num):
+                for j in range(v_num):
+                    if graph[i][k] + graph[k][j] < graph[i][j]:
+                        graph[i][j] = graph[i][k] + graph[k][j]
+        return graph
+
+
+    # 完全マッチングの最小経路を求める
+    def compute_minimum_weight_perfect_matching_bruteforce(self, adj_matrix: list, odd_vertices):
+        """
+        Brute-force version: 全ての並べ替えを試して最小化する（小規模向け）。
+        返り値は (pairs, cost) で、pairs は元の頂点インデックスのタプルのリスト。
+        """
+        num_odd = len(odd_vertices)
+
+        # 完全マッチングが存在しない場合の処理
+        if num_odd == 0:
+            return [], 0
+
+        if num_odd % 2 == 1:
+            raise ValueError("完全マッチングが存在しません（頂点が奇数個）")
+
+        # 各ペアリングについて重み合計を計算
+        weight = [[0] * num_odd for _ in range(num_odd)]
+        for i in range(num_odd):
+            for j in range(i + 1, num_odd):
+                u = odd_vertices[i]
+                v = odd_vertices[j]
+                weight[i][j] = adj_matrix[u][v]
+                weight[j][i] = adj_matrix[u][v]
+
+        # 最小コスト探索（全探索）
+        best_cost = float("inf")
+        best_pairs = None
+
+        first = 0
+        others = list(range(1, num_odd))
+
+        for perm in itertools.permutations(others):
+            pairs = [(first, perm[0])]
+            for i in range(1, num_odd // 2):
+                pairs.append((perm[2 * i - 1], perm[2 * i]))
+
+            cost = sum(weight[u][v] for u, v in pairs)
+            if cost < best_cost:
+                best_cost = cost
+                best_pairs = pairs
+
+        result_pairs = [(odd_vertices[i], odd_vertices[j]) for i, j in best_pairs]
+        return result_pairs, best_cost
+
+    def sum_all_edges_undirected(self, adj_matrix):
+        """
+        無向グラフの全エッジの重み合計を計算
+        adj_matrix: 隣接行列 (2次元リスト)
+        """
+        n = len(adj_matrix)
+        total = 0
+        for i in range(n):
+            for j in range(i + 1, n):  # 上三角部分だけ見る
+                if adj_matrix[i][j] != 0 and adj_matrix[i][j] != float("inf"):
+                    total += adj_matrix[i][j]
+        return total
 
 def create_graph_matrix(v_num, e_num):
     INF = math.inf
@@ -80,89 +177,6 @@ def visualize_graph_from_adjmatrix(adj_matrix, seed=0):
     plt.show()
 
 
-def count_vertices_degree(adj_matrix) -> list:
-    """
-    adj_matrix: 隣接行列 (2次元リスト)
-    戻り値: 各頂点の次数を格納したリスト
-    """
-    v_num = len(adj_matrix)
-    degree_counts = [0] * v_num
-
-    for i in range(v_num):
-        degree = 0
-        for j in range(v_num):
-            if adj_matrix[i][j] != 0 and adj_matrix[i][j] != math.inf:
-                degree += 1
-        degree_counts[i] = degree
-    return degree_counts
-
-
-def get_odd_degree_vertices(degree_count):
-    return [i for i, deg in enumerate(degree_count) if deg % 2 == 1]
-
-
-def calculate_shortest_path_matrix(adj_matrix: list) -> list:
-    """
-    隣接行列から全頂点間の最短距離行列を計算（Floyd-Warshallアルゴリズム）
-    adj_matrix: 隣接行列 (2次元リスト)
-    戻り値: 最短距離行列 (2次元リスト)
-    """
-    v_num = len(adj_matrix)
-    # 初期化
-    graph = [[adj_matrix[i][j] for j in range(v_num)] for i in range(v_num)]
-
-    # Floyd-Warshall アルゴリズム
-    for k in range(v_num):
-        for i in range(v_num):
-            for j in range(v_num):
-                if graph[i][k] + graph[k][j] < graph[i][j]:
-                    graph[i][j] = graph[i][k] + graph[k][j]
-    return graph
-
-
-# 完全マッチングの最小経路を求める
-def compute_minimum_weight_perfect_matching_bruteforce(adj_matrix: list, odd_vertices):
-    """
-    Brute-force version: 全ての並べ替えを試して最小化する（小規模向け）。
-    返り値は (pairs, cost) で、pairs は元の頂点インデックスのタプルのリスト。
-    """
-    num_odd = len(odd_vertices)
-
-    # 完全マッチングが存在しない場合の処理
-    if num_odd == 0:
-        return [], 0
-
-    if num_odd % 2 == 1:
-        raise ValueError("完全マッチングが存在しません（頂点が奇数個）")
-
-    # 各ペアリングについて重み合計を計算
-    weight = [[0] * num_odd for _ in range(num_odd)]
-    for i in range(num_odd):
-        for j in range(i + 1, num_odd):
-            u = odd_vertices[i]
-            v = odd_vertices[j]
-            weight[i][j] = adj_matrix[u][v]
-            weight[j][i] = adj_matrix[u][v]
-
-    # 最小コスト探索（全探索）
-    best_cost = float("inf")
-    best_pairs = None
-
-    first = 0
-    others = list(range(1, num_odd))
-
-    for perm in itertools.permutations(others):
-        pairs = [(first, perm[0])]
-        for i in range(1, num_odd // 2):
-            pairs.append((perm[2 * i - 1], perm[2 * i]))
-
-        cost = sum(weight[u][v] for u, v in pairs)
-        if cost < best_cost:
-            best_cost = cost
-            best_pairs = pairs
-
-    result_pairs = [(odd_vertices[i], odd_vertices[j]) for i, j in best_pairs]
-    return result_pairs, best_cost
 
 
 def compute_minimum_weight_perfect_matching_fast(adj_matrix: list, odd_vertices):
@@ -239,20 +253,6 @@ def compute_minimum_weight_perfect_matching(
         raise ValueError(
             "Unknown method for matching: choose 'auto', 'fast', or 'bruteforce'"
         )
-
-
-def sum_all_edges_undirected(adj_matrix):
-    """
-    無向グラフの全エッジの重み合計を計算
-    adj_matrix: 隣接行列 (2次元リスト)
-    """
-    n = len(adj_matrix)
-    total = 0
-    for i in range(n):
-        for j in range(i + 1, n):  # 上三角部分だけ見る
-            if adj_matrix[i][j] != 0 and adj_matrix[i][j] != float("inf"):
-                total += adj_matrix[i][j]
-    return total
 
 
 def main():
