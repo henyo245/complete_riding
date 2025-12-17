@@ -52,14 +52,17 @@ def preprocess_jr_hokkaido(
     jrh["lon"] = lon
     jrh["lat"] = lat
     jrh = jrh[["station_cd", "station_name", "line_cd", "lon", "lat", "line_name"]]
+    
+    # station_cd を station_g_cd に変換
+    station_cd_to_gcd = dict(zip(station["station_cd"], station["station_g_cd"]))
+    jrh["station_cd"] = jrh["station_cd"].map(station_cd_to_gcd)
+    jrh = jrh.drop_duplicates(subset="station_cd", keep="first")
 
     # JR北海道の接続辺を抽出する
     jrh_join = join[join["line_cd"].isin(jrh_lines["line_cd"].tolist())]
     jrh_join = jrh_join[["station_cd1", "station_cd2"]]
 
-    # station_cd を station_g_cd に変換
-    station_cd_to_gcd = dict(zip(station["station_cd"], station["station_g_cd"]))
-    jrh["station_cd"] = jrh["station_cd"].map(station_cd_to_gcd)
+    
     jrh_join["station_cd1"] = jrh_join["station_cd1"].map(station_cd_to_gcd)
     jrh_join["station_cd2"] = jrh_join["station_cd2"].map(station_cd_to_gcd)
 
