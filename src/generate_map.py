@@ -42,6 +42,12 @@ def preprocess_jr_hokkaido(line: pd.DataFrame, station: pd.DataFrame, join: pd.D
     jrh_join = join[join["line_cd"].isin(jrh_lines["line_cd"].tolist())]
     jrh_join = jrh_join[["station_cd1", "station_cd2"]]
 
+    # station_cd を station_g_cd に変換
+    station_cd_to_gcd = dict(zip(station["station_cd"], station["station_g_cd"]))
+    jrh["station_cd"] = jrh["station_cd"].map(station_cd_to_gcd)
+    jrh_join["station_cd1"] = jrh_join["station_cd1"].map(station_cd_to_gcd)
+    jrh_join["station_cd2"] = jrh_join["station_cd2"].map(station_cd_to_gcd)
+
     return jrh, jrh_join
 
 # ネットワークグラフの作成
@@ -162,7 +168,9 @@ def compute_key_station_pairwise_distances(all_stations: pd.DataFrame, all_join:
     """
     # Build full graph with station_cd as nodes and weight as euclidean distance
     G_full = nx.Graph()
-    coords = all_stations.set_index('station_cd')[['lon', 'lat']].to_dict('index')
+    # station_cd が重複している場合があるため、重複を排除して座標辞書を作る
+    dedup_stations = all_stations.drop_duplicates(subset='station_cd', keep='first')
+    coords = dedup_stations.set_index('station_cd')[['lon', 'lat']].to_dict('index')
 
     # add nodes
     for station_cd in all_stations['station_cd'].tolist():
@@ -170,11 +178,15 @@ def compute_key_station_pairwise_distances(all_stations: pd.DataFrame, all_join:
 
     # add edges with weights
     for s1, s2 in all_join[['station_cd1', 'station_cd2']].itertuples(index=False):
+        # 座標が見つからない駅がある場合はスキップ
         if s1 in coords and s2 in coords:
             lon1, lat1 = coords[s1]['lon'], coords[s1]['lat']
             lon2, lat2 = coords[s2]['lon'], coords[s2]['lat']
             dist = math.sqrt((lon1 - lon2) ** 2 + (lat1 - lat2) ** 2)
             G_full.add_edge(s1, s2, weight=dist)
+        else:
+            # missing coords -> skip that edge
+            continue
 
     # prepare key station list in same order as key_stations dataframe
     key_list = key_stations['station_cd'].tolist()
@@ -208,7 +220,9 @@ def build_reduced_adj_matrix(all_stations: pd.DataFrame, all_join: pd.DataFrame,
     """
     # 全駅グラフを構築（ノードは station_cd、辺の重みは lon/lat のユークリッド距離）
     G_full = nx.Graph()
-    coords = all_stations.set_index('station_cd')[['lon', 'lat']].to_dict('index')
+    # station_cd が重複している場合があるため、重複を排除して座標辞書を作る
+    dedup_stations = all_stations.drop_duplicates(subset='station_cd', keep='first')
+    coords = dedup_stations.set_index('station_cd')[['lon', 'lat']].to_dict('index')
     for station_cd in all_stations['station_cd'].tolist():
         G_full.add_node(station_cd)
     for s1, s2 in all_join[['station_cd1', 'station_cd2']].itertuples(index=False):
@@ -276,17 +290,15 @@ def main():
     distance_matrix = calculate_distance_matrix(jrh_stations, jrh_join)
     visualize_graph(jrh_stations, jrh_join, distance_matrix)
 
+    # 接続駅と終点駅を抽出
     key_stations, key_join = extract_key_stations(jrh_stations, jrh_join)
-    # key_stations に対応する距離行列を作成して渡す
+    # 接続駅と終点駅の距離を計算
+    reduced_adj = build_reduced_adj_matrix(jrh_stations, jrh_join, key_stations)
+    visualize_graph(key_stations, key_join, reduced_adj)
+
     # 路線に沿った距離を計算するため，全駅のグラフを辿ってキー駅間の最短経路距離を求める
     key_distance_matrix = compute_key_station_pairwise_distances(jrh_stations, jrh_join, key_stations)
     visualize_graph(key_stations, key_join, key_distance_matrix)
-
-    # 縮約グラフの隣接行列を作成して rsc に保存（cpp.py で読みやすい形式）
-    reduced_adj = build_reduced_adj_matrix(jrh_stations, jrh_join, key_stations)
-    csv_path, list_path = save_reduced_adjmatrix_csv(reduced_adj, key_stations, out_dir, prefix="key_stations")
-    print(f"Saved reduced adjacency matrix to: {csv_path}")
-    print(f"Saved key stations list to: {list_path}")
 
 if __name__ == "__main__":
     main()
