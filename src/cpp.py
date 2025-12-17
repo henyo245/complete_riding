@@ -5,7 +5,7 @@ import math
 import itertools
 
 class CPP:
-    def count_vertices_degree(self, adj_matrix) -> list:
+    def count_vertices_degree(self, adj_matrix: list[list]) -> list:
         """
         adj_matrix: 隣接行列 (2次元リスト)
         戻り値: 各頂点の次数を格納したリスト
@@ -22,11 +22,11 @@ class CPP:
         return degree_counts
 
 
-    def get_odd_degree_vertices(self, degree_count):
+    def get_odd_degree_vertices(self, degree_count: list[int]) -> list:
         return [i for i, deg in enumerate(degree_count) if deg % 2 == 1]
 
 
-    def calculate_shortest_path_matrix(self, adj_matrix: list) -> list:
+    def calculate_shortest_path_matrix(self, adj_matrix: list[list]) -> list:
         """
         隣接行列から全頂点間の最短距離行列を計算（Floyd-Warshallアルゴリズム）
         adj_matrix: 隣接行列 (2次元リスト)
@@ -46,7 +46,7 @@ class CPP:
 
 
     # 完全マッチングの最小経路を求める
-    def compute_minimum_weight_perfect_matching_bruteforce(self, adj_matrix: list, odd_vertices):
+    def compute_minimum_weight_perfect_matching_bruteforce(self, adj_matrix: list[list], odd_vertices: list[int]):
         """
         Brute-force version: 全ての並べ替えを試して最小化する（小規模向け）。
         返り値は (pairs, cost) で、pairs は元の頂点インデックスのタプルのリスト。
@@ -89,7 +89,7 @@ class CPP:
         result_pairs = [(odd_vertices[i], odd_vertices[j]) for i, j in best_pairs]
         return result_pairs, best_cost
 
-    def sum_all_edges_undirected(self, adj_matrix):
+    def sum_all_edges_undirected(self, adj_matrix: list[list]) -> int:
         """
         無向グラフの全エッジの重み合計を計算
         adj_matrix: 隣接行列 (2次元リスト)
