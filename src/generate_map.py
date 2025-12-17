@@ -352,6 +352,9 @@ def main():
         jrh_stations, jrh_join, key_stations
     )
     visualize_graph(key_stations, key_join, key_distance_matrix)
+    save_reduced_adjmatrix_csv(
+        key_distance_matrix, key_stations, out_dir, prefix="jrh_key_stations"
+    )
 
 
 if __name__ == "__main__":
