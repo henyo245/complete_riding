@@ -38,10 +38,12 @@ def main():
         )
     
     # 結果表示
-    print("最小完全マッチングのペア:", [
-        (station_name_map.get(station_codes[u], station_codes[u]),
-         station_name_map.get(station_codes[v], station_codes[v])) for u, v in pairs
-    ])
+    print("最小完全マッチングのペア:")
+    for u, v in pairs:
+        station_u = station_name_map.get(station_codes[u], station_codes[u])
+        station_v = station_name_map.get(station_codes[v], station_codes[v])
+        distance = shortest_path_matrix[u][v]
+        print(f"{station_u} - {station_v}: {distance}")
     print("全エッジの重み合計 + 最小完全マッチングの重み合計 =", total_edge_weight)
 
 
