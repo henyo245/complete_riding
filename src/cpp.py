@@ -33,15 +33,28 @@ class CPP:
         戻り値: 最短距離行列 (2次元リスト)
         """
         v_num = len(adj_matrix)
-        # 初期化
-        graph = [[adj_matrix[i][j] for j in range(v_num)] for i in range(v_num)]
+        # 初期化（非対角の 0 は未接続とみなし INF に変換しておく）
+        graph = [[None for _ in range(v_num)] for _ in range(v_num)]
+        for i in range(v_num):
+            for j in range(v_num):
+                val = adj_matrix[i][j]
+                # treat 0 (except diagonal) as infinite (no edge)
+                if i != j and (val == 0 or val is None):
+                    graph[i][j] = math.inf
+                else:
+                    graph[i][j] = val
 
-        # Floyd-Warshall アルゴリズム
+        # Floyd-Warshall アルゴリズム（無限大の扱いに注意）
         for k in range(v_num):
             for i in range(v_num):
+                if graph[i][k] == math.inf:
+                    continue
                 for j in range(v_num):
-                    if graph[i][k] + graph[k][j] < graph[i][j]:
-                        graph[i][j] = graph[i][k] + graph[k][j]
+                    if graph[k][j] == math.inf:
+                        continue
+                    nd = graph[i][k] + graph[k][j]
+                    if nd < graph[i][j]:
+                        graph[i][j] = nd
         return graph
 
 
