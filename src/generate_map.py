@@ -52,7 +52,7 @@ def preprocess_jr_hokkaido(
     jrh["lon"] = lon
     jrh["lat"] = lat
     jrh = jrh[["station_cd", "station_name", "line_cd", "lon", "lat", "line_name"]]
-    
+
     # station_cd を station_g_cd に変換
     station_cd_to_gcd = dict(zip(station["station_cd"], station["station_g_cd"]))
     jrh["station_cd"] = jrh["station_cd"].map(station_cd_to_gcd)
@@ -62,7 +62,6 @@ def preprocess_jr_hokkaido(
     jrh_join = join[join["line_cd"].isin(jrh_lines["line_cd"].tolist())]
     jrh_join = jrh_join[["station_cd1", "station_cd2"]]
 
-    
     jrh_join["station_cd1"] = jrh_join["station_cd1"].map(station_cd_to_gcd)
     jrh_join["station_cd2"] = jrh_join["station_cd2"].map(station_cd_to_gcd)
 
@@ -357,8 +356,7 @@ def main():
     key_distance_matrix = compute_key_station_pairwise_distances(
         jrh_stations, jrh_join, key_stations
     )
-    visualize_graph(key_stations, key_join, key_distance_matrix)
-
+    # visualize_graph(key_stations, key_join, key_distance_matrix)
 
 
 if __name__ == "__main__":
