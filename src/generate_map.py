@@ -349,15 +349,16 @@ def main():
     # 接続駅と終点駅の距離を計算
     reduced_adj = build_reduced_adj_matrix(jrh_stations, jrh_join, key_stations)
     visualize_graph(key_stations, key_join, reduced_adj)
+    save_reduced_adjmatrix_csv(
+        reduced_adj, key_stations, out_dir, prefix="jrh_key_stations"
+    )
 
     # 路線に沿った距離を計算するため，全駅のグラフを辿ってキー駅間の最短経路距離を求める
     key_distance_matrix = compute_key_station_pairwise_distances(
         jrh_stations, jrh_join, key_stations
     )
     visualize_graph(key_stations, key_join, key_distance_matrix)
-    save_reduced_adjmatrix_csv(
-        key_distance_matrix, key_stations, out_dir, prefix="jrh_key_stations"
-    )
+
 
 
 if __name__ == "__main__":
