@@ -14,6 +14,7 @@ def main():
     # ファイルを読み込む
     adj_matrix_with_station = pd.read_csv(
         Path(data_dir, "jrh_key_stations_adjmatrix.csv"),
+        header=None,
     ).values.tolist()
 
     # 上，左は駅コードなので削除
@@ -23,8 +24,10 @@ def main():
     
     # 駅コードを戻す
     shortest_path_matrix_with_station = []
-    station_codes = [row[0] for row in adj_matrix_with_station]
-    shortest_path_matrix_with_station.append(station_codes)
+    # ヘッダ行を除いた駅コードリスト
+    station_codes = [row[0] for row in adj_matrix_with_station[1:]]
+    # 最初のセルは空にして、列ヘッダ行として駅コードを付与
+    shortest_path_matrix_with_station.append([""] + station_codes)
     for i, row in enumerate(shortest_path_matrix):
         shortest_path_matrix_with_station.append([station_codes[i]] + row)
     
