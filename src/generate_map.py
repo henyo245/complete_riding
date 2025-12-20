@@ -138,6 +138,131 @@ def visualize_graph(
     plt.show()
 
 
+def visualize_graph_with_selected_pairs(
+    stations: pd.DataFrame,
+    join: pd.DataFrame,
+    distance_matrix: np.ndarray | None = None,
+    selected_pairs=None,
+    selected_color: str = "red",
+    selected_width: int = 2,
+    selected_alpha: float = 0.9,
+    seed: int = 0,
+):
+    """
+    `visualize_graph` の別バージョン。
+    - `selected_pairs` は `(a, b)` のリストで与える（`station_cd` または `station_name` のどちらでも可）。
+    - もし `a` と `b` が直接辺でつながっていなければ、グラフ上の最短経路上の辺をハイライトする。
+    - 最短経路が存在しない場合は、ノード座標を破線で結ぶ。
+    """
+    G = nx.Graph()
+    # 頂点を駅名にする
+    # stations に lon/lat が含まれる場合はそれを座標に使う。含まれない場合は後で spring_layout で作る。
+    G.add_nodes_from(stations["station_name"])
+    pos = None
+    # 駅コードと駅名の辞書
+    cd_to_name = dict(zip(stations["station_cd"], stations["station_name"]))
+
+    # グラフに辺を追加する
+    if distance_matrix is not None:
+        station_list = stations["station_cd"].tolist()
+        for i in range(len(station_list)):
+            for j in range(i + 1, len(station_list)):
+                cd_i = station_list[i]
+                cd_j = station_list[j]
+                name1 = cd_to_name.get(cd_i)
+                name2 = cd_to_name.get(cd_j)
+                if not (name1 and name2):
+                    continue
+                dist = distance_matrix[i][j]
+                if not np.isfinite(dist) or dist == 0:
+                    continue
+                G.add_edge(name1, name2, weight=dist)
+    else:
+        for station_cd1, station_cd2 in join[["station_cd1", "station_cd2"]].itertuples(index=False):
+            name1 = cd_to_name.get(station_cd1)
+            name2 = cd_to_name.get(station_cd2)
+            if name1 and name2:
+                G.add_edge(name1, name2)
+
+    # 描画の準備
+    # pos が None の場合は stations に lon/lat があるかをチェックして設定
+    if pos is None:
+        if "lon" in stations.columns and "lat" in stations.columns:
+            pos = {row["station_name"]: (row["lon"], row["lat"]) for _, row in stations.iterrows()}
+        else:
+            # ノードとエッジが追加された G を使ってレイアウトを作る
+            pos = nx.spring_layout(G, seed=seed)
+
+    plt.figure(figsize=(10, 10))
+    nx.draw_networkx_nodes(G, pos, node_size=50)
+    nx.draw_networkx_labels(G, pos, font_size=8, font_family="IPAexGothic")
+    # ベースのエッジは薄いグレーで描画
+    nx.draw_networkx_edges(G, pos, edge_color="#888888")
+
+    # 選択ペアに基づいてハイライトするエッジを集める
+    highlight_edges = set()
+    dashed_lines = []
+    if selected_pairs:
+        for a, b in selected_pairs:
+            # a/b が station_cd で渡された場合は名前に変換、そうでなければそのまま駅名として扱う
+            name_a = cd_to_name.get(a, a)
+            name_b = cd_to_name.get(b, b)
+            if name_a not in G.nodes or name_b not in G.nodes:
+                continue
+            # まず重み付き最短経路で試す（weight 属性が存在する場合）
+            try:
+                path = nx.shortest_path(G, source=name_a, target=name_b, weight="weight")
+            except (nx.NetworkXNoPath, nx.NodeNotFound):
+                # 経路がない
+                dashed_lines.append((name_a, name_b))
+                continue
+            except Exception:
+                # weight 指定が失敗した場合は重みなし最短経路を試す
+                try:
+                    path = nx.shortest_path(G, source=name_a, target=name_b)
+                except (nx.NetworkXNoPath, nx.NodeNotFound):
+                    dashed_lines.append((name_a, name_b))
+                    continue
+
+            # path を辺集合に変換
+            for x, y in zip(path[:-1], path[1:]):
+                if (x, y) in G.edges:
+                    highlight_edges.add((x, y))
+                else:
+                    highlight_edges.add((y, x))
+
+    # ハイライトエッジを上に重ねて描画
+    if highlight_edges:
+        nx.draw_networkx_edges(
+            G,
+            pos,
+            edgelist=list(highlight_edges),
+            width=selected_width,
+            edge_color=selected_color,
+            alpha=selected_alpha,
+        )
+
+    # 到達不能ペアは破線で直接結ぶ
+    for u, v in dashed_lines:
+        xu, yu = pos[u]
+        xv, yv = pos[v]
+        plt.plot([xu, xv], [yu, yv], linestyle="--", color=selected_color, alpha=0.7)
+
+    # エッジラベル（距離）を表示
+    edge_labels = {}
+    for u, v, data in G.edges(data=True):
+        w = data.get("weight")
+        if w is not None:
+            edge_labels[(u, v)] = f"{w:.2f}"
+
+    if edge_labels:
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=7)
+
+    plt.title("JR北海道の路線図 (selected pairs highlighted)")
+    plt.axis("off")
+    plt.show()
+
+
 # 辺に重みとして駅間の距離を持たせるためのデータ作成
 def calculate_distance_matrix(stations: pd.DataFrame, join: pd.DataFrame) -> np.ndarray:
     station_list = stations["station_cd"].tolist()
@@ -333,7 +458,11 @@ def save_reduced_adjmatrix_csv(
     df.to_csv(csv_path)
 
     list_path = out_dir / f"{prefix}_stations.csv"
-    key_stations[["station_cd", "station_name"]].to_csv(list_path, index=False)
+    # 可能であれば lon/lat カラムも保存しておく（後で可視化で利用するため）
+    cols = ["station_cd", "station_name"]
+    if "lon" in key_stations.columns and "lat" in key_stations.columns:
+        cols += ["lon", "lat"]
+    key_stations[cols].to_csv(list_path, index=False)
 
     return csv_path, list_path
 
