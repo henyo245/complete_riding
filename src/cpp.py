@@ -3,6 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import math
 import itertools
+from visualize import Visualizer
 
 class CPP:
     def count_vertices_degree(self, adj_matrix: list[list]) -> list:
@@ -33,15 +34,28 @@ class CPP:
         戻り値: 最短距離行列 (2次元リスト)
         """
         v_num = len(adj_matrix)
-        # 初期化
-        graph = [[adj_matrix[i][j] for j in range(v_num)] for i in range(v_num)]
+        # 初期化（非対角の 0 は未接続とみなし INF に変換しておく）
+        graph = [[None for _ in range(v_num)] for _ in range(v_num)]
+        for i in range(v_num):
+            for j in range(v_num):
+                val = adj_matrix[i][j]
+                # treat 0 (except diagonal) as infinite (no edge)
+                if i != j and (val == 0 or val is None):
+                    graph[i][j] = math.inf
+                else:
+                    graph[i][j] = val
 
-        # Floyd-Warshall アルゴリズム
+        # Floyd-Warshall アルゴリズム（無限大の扱いに注意）
         for k in range(v_num):
             for i in range(v_num):
+                if graph[i][k] == math.inf:
+                    continue
                 for j in range(v_num):
-                    if graph[i][k] + graph[k][j] < graph[i][j]:
-                        graph[i][j] = graph[i][k] + graph[k][j]
+                    if graph[k][j] == math.inf:
+                        continue
+                    nd = graph[i][k] + graph[k][j]
+                    if nd < graph[i][j]:
+                        graph[i][j] = nd
         return graph
 
 
@@ -239,42 +253,19 @@ def create_graph_matrix(v_num, e_num):
     return graph
 
 
-def visualize_graph_from_adjmatrix(adj_matrix, seed=0):
-    """
-    adj_matrix: 隣接行列 (2次元リスト)
-    """
-    n = len(adj_matrix)
-    G = nx.Graph()
-
-    # ノード追加
-    G.add_nodes_from(range(n))
-
-    INF = math.inf
-    # 隣接行列から辺を追加
-    for i in range(n):
-        for j in range(i + 1, n):  # 無向グラフなので片側だけ見る
-            w = adj_matrix[i][j]
-            if (w != 0) and (w != INF):  # 0 は辺なし
-                G.add_edge(i, j, weight=w)
-
-    # レイアウト
-    pos = nx.spring_layout(G, seed=seed)
-
-    # ノード描画
-    nx.draw_networkx_nodes(G, pos, node_size=700, node_color="skyblue")
-
-    # エッジ描画
-    nx.draw_networkx_edges(G, pos, width=2)
-
-    # ノードラベル
-    nx.draw_networkx_labels(G, pos, font_size=12, font_weight="bold")
-
-    # 重みラベル
-    edge_labels = nx.get_edge_attributes(G, "weight")
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
-
-    plt.axis("off")
-    plt.show()
+def visualize_graph_from_adjmatrix(
+    adj_matrix,
+    seed=0,
+    selected_pairs=None,
+    selected_color="red",
+    selected_width=3,
+    selected_alpha=0.9,
+):
+    # delegate to Visualizer
+    Visualizer().visualize_graph_from_adjmatrix(
+        adj_matrix, seed=seed, selected_pairs=selected_pairs,
+        selected_color=selected_color, selected_width=selected_width, selected_alpha=selected_alpha
+    )
 
 
 def main():
@@ -296,7 +287,7 @@ def main():
     print("最小完全マッチングのペア:", pairs)
     print("全エッジの重み合計 + 最小完全マッチングの重み合計 =", total_edge_weight)
 
-    visualize_graph_from_adjmatrix(graph_matrix)
+    visualize_graph_from_adjmatrix(graph_matrix, selected_pairs=pairs)
 
 if __name__ == "__main__":
     main()
