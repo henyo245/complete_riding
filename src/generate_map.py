@@ -74,68 +74,10 @@ def visualize_graph(
     join: pd.DataFrame,
     distance_matrix: np.ndarray | None = None,
 ):
-    G = nx.Graph()
-    # 頂点を駅名にする
-    G.add_nodes_from(stations["station_name"])
-    # plot の座標を設定
-    pos = {
-        row["station_name"]: (row["lon"], row["lat"]) for _, row in stations.iterrows()
-    }
-    # 駅コードと駅名の辞書
-    cd_to_name = dict(zip(stations["station_cd"], stations["station_name"]))
+    # delegate to Visualizer
+    from visualize import Visualizer
 
-    # 距離行列が渡されている場合、stations の並びと行列の並びは一致している想定
-    station_list = stations["station_cd"].tolist()
-    station_index = {station_cd: idx for idx, station_cd in enumerate(station_list)}
-
-    # グラフに辺を追加する
-    if distance_matrix is not None:
-        # distance_matrix が渡された場合は、その行列に基づいて全てのキー駅間の
-        # 路線距離（最短経路）を辺として追加する（key_stations 用の表示で用いる）
-        station_list = stations["station_cd"].tolist()
-        for i in range(len(station_list)):
-            for j in range(i + 1, len(station_list)):
-                cd_i = station_list[i]
-                cd_j = station_list[j]
-                name1 = cd_to_name.get(cd_i)
-                name2 = cd_to_name.get(cd_j)
-                if not (name1 and name2):
-                    continue
-                dist = distance_matrix[i][j]
-                if not np.isfinite(dist) or dist == 0:
-                    continue
-                G.add_edge(name1, name2, weight=dist)
-    else:
-        # 距離行列が渡されていない場合は join データに基づき辺を追加する
-        for station_cd1, station_cd2 in join[["station_cd1", "station_cd2"]].itertuples(
-            index=False
-        ):
-            name1 = cd_to_name.get(station_cd1)
-            name2 = cd_to_name.get(station_cd2)
-            if name1 and name2:
-                G.add_edge(name1, name2)
-
-    # グラフの描画
-    plt.figure(figsize=(10, 10))
-    # ノードとラベル
-    nx.draw_networkx_nodes(G, pos, node_size=50)
-    nx.draw_networkx_labels(G, pos, font_size=8, font_family="IPAexGothic")
-    # エッジ描画
-    nx.draw_networkx_edges(G, pos)
-
-    # エッジに距離ラベルを付ける（weight 属性があれば小数点2桁で表示）
-    edge_labels = {}
-    for u, v, data in G.edges(data=True):
-        w = data.get("weight")
-        if w is not None:
-            edge_labels[(u, v)] = f"{w:.2f}"
-
-    if edge_labels:
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=7)
-
-    plt.title("JR北海道の路線図")
-    plt.axis("off")
-    plt.show()
+    Visualizer().visualize_graph_of_stations(stations, join, distance_matrix)
 
 
 def visualize_graph_with_selected_pairs(
@@ -261,6 +203,22 @@ def visualize_graph_with_selected_pairs(
     plt.title("JR北海道の路線図 (selected pairs highlighted)")
     plt.axis("off")
     plt.show()
+
+def visualize_graph_with_selected_pairs(
+    stations: pd.DataFrame,
+    join: pd.DataFrame,
+    distance_matrix: np.ndarray | None = None,
+    selected_pairs=None,
+    selected_color: str = "red",
+    selected_width: int = 2,
+    selected_alpha: float = 0.9,
+    seed: int = 0,
+):
+    from visualize import Visualizer
+
+    Visualizer().visualize_graph_with_selected_pairs(
+        stations, join, distance_matrix, selected_pairs, selected_color, selected_width, selected_alpha
+    )
 
 
 # 辺に重みとして駅間の距離を持たせるためのデータ作成

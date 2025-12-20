@@ -3,6 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import math
 import itertools
+from visualize import Visualizer
 
 class CPP:
     def count_vertices_degree(self, adj_matrix: list[list]) -> list:
@@ -260,81 +261,11 @@ def visualize_graph_from_adjmatrix(
     selected_width=3,
     selected_alpha=0.9,
 ):
-    """
-    adj_matrix: 隣接行列 (2次元リスト)
-    selected_pairs: ハイライトしたい頂点ペアのリスト [(u,v), ...]
-    - 直接つながっていないペアの場合は、最短経路の辺をハイライトする
-    - 経路が存在しない場合は、ノード間を破線で結ぶ
-    """
-    n = len(adj_matrix)
-    G = nx.Graph()
-
-    # ノード追加
-    G.add_nodes_from(range(n))
-
-    INF = math.inf
-    # 隣接行列から辺を追加
-    for i in range(n):
-        for j in range(i + 1, n):  # 無向グラフなので片側だけ見る
-            w = adj_matrix[i][j]
-            if (w != 0) and (w != INF):  # 0 は辺なし
-                G.add_edge(i, j, weight=w)
-
-    # レイアウト
-    pos = nx.spring_layout(G, seed=seed)
-
-    # ノード描画
-    nx.draw_networkx_nodes(G, pos, node_size=700, node_color="skyblue")
-
-    # ベースのエッジ描画（薄いグレー）
-    nx.draw_networkx_edges(G, pos, width=2, edge_color="#888888")
-
-    # ハイライトするエッジ集合を集める
-    highlight_edges = set()
-    dashed_lines = []  # unreachable ペア用に座標を保持
-    if selected_pairs:
-        for u, v in selected_pairs:
-            if u not in G.nodes or v not in G.nodes:
-                continue
-            try:
-                path = nx.shortest_path(G, source=u, target=v, weight="weight")
-                # path を辺に変換
-                for a, b in zip(path[:-1], path[1:]):
-                    # 無向グラフなので順序を正規化
-                    if (a, b) in G.edges:
-                        highlight_edges.add((a, b))
-                    else:
-                        highlight_edges.add((b, a))
-            except nx.NetworkXNoPath:
-                # 経路がない場合はノード間を破線で結ぶ
-                dashed_lines.append((u, v))
-
-    # ハイライトエッジを上に重ねて描画
-    if highlight_edges:
-        nx.draw_networkx_edges(
-            G,
-            pos,
-            edgelist=list(highlight_edges),
-            width=selected_width,
-            edge_color=selected_color,
-            alpha=selected_alpha,
-        )
-
-    # 到達不能ペアは破線で直接結ぶ
-    for u, v in dashed_lines:
-        xu, yu = pos[u]
-        xv, yv = pos[v]
-        plt.plot([xu, xv], [yu, yv], linestyle="--", color=selected_color, alpha=0.7)
-
-    # ノードラベル
-    nx.draw_networkx_labels(G, pos, font_size=12, font_weight="bold")
-
-    # 重みラベル
-    edge_labels = nx.get_edge_attributes(G, "weight")
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
-
-    plt.axis("off")
-    plt.show()
+    # delegate to Visualizer
+    Visualizer().visualize_graph_from_adjmatrix(
+        adj_matrix, seed=seed, selected_pairs=selected_pairs,
+        selected_color=selected_color, selected_width=selected_width, selected_alpha=selected_alpha
+    )
 
 
 def main():

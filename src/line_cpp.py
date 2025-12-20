@@ -2,7 +2,7 @@
 路線の距離行列を読み込み，完乗に必要な最短距離を計算する
 """
 from cpp import CPP
-from generate_map import visualize_graph_with_selected_pairs
+from visualize import Visualizer
 import pandas as pd
 from pathlib import Path
 import numpy as np
@@ -44,8 +44,8 @@ def main():
     # shortest_path_matrix を numpy 配列に変換して渡す（visualize 側は行列を期待する）
     dist_matrix = np.array(shortest_path_matrix, dtype=float)
 
-    # visualize_graph_with_selected_pairs に渡す stations DataFrame は station_info
-    visualize_graph_with_selected_pairs(
+    # visualize using Visualizer (station_info contains lon/lat)
+    Visualizer().visualize_graph_with_selected_pairs(
         station_info, None, distance_matrix=adj_matrix, selected_pairs=selected_pairs_codes
     )
 
