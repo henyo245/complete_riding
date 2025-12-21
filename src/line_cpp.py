@@ -48,9 +48,15 @@ def main(prefix: str = "company_1_key_stations"):
     selected_pairs_codes = [(station_codes[u], station_codes[v]) for u, v in pairs]
 
     # visualize using Visualizer (station_info contains lon/lat)
+    image_path = Path("output") / "images" / f"{prefix}_line_cpp_selected_pairs.png"
     Visualizer().visualize_graph_with_selected_pairs(
-        station_info, None, distance_matrix=adj_matrix_np, selected_pairs=selected_pairs_codes
+        station_info,
+        None,
+        distance_matrix=adj_matrix_np,
+        selected_pairs=selected_pairs_codes,
+        save_path=str(image_path),
     )
+    print(f"Saved visualization to: {image_path}")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import math
 import numpy as np
 from typing import List, Tuple, Optional
 import pandas as pd
+from pathlib import Path
 
 
 class Visualizer:
@@ -17,6 +18,7 @@ class Visualizer:
         join: pd.DataFrame,
         distance_matrix: Optional[np.ndarray] = None,
         figsize: Tuple[int, int] = (10, 10),
+        save_path: Optional[str] = None,
     ):
         G = nx.Graph()
         # 頂点を駅名にする
@@ -72,6 +74,9 @@ class Visualizer:
             nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=7)
 
         plt.axis("off")
+        if save_path:
+            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(save_path, bbox_inches="tight", dpi=150)
         plt.show()
 
     def visualize_graph_with_selected_pairs(
@@ -83,6 +88,7 @@ class Visualizer:
         selected_color: str = "red",
         selected_width: int = 2,
         selected_alpha: float = 0.9,
+        save_path: Optional[str] = None,
     ):
         G = nx.Graph()
         G.add_nodes_from(stations["station_name"])
@@ -172,11 +178,15 @@ class Visualizer:
             nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=7)
 
         plt.axis("off")
+        if save_path:
+            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(save_path, bbox_inches="tight", dpi=150)
         plt.show()
 
     def visualize_graph_from_adjmatrix(
         self, adj_matrix: List[List], seed: int = 0, selected_pairs: Optional[List[Tuple]] = None,
         selected_color: str = "red", selected_width: int = 3, selected_alpha: float = 0.9,
+        save_path: Optional[str] = None,
     ):
         n = len(adj_matrix)
         G = nx.Graph()
@@ -231,4 +241,7 @@ class Visualizer:
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
 
         plt.axis("off")
+        if save_path:
+            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(save_path, bbox_inches="tight", dpi=150)
         plt.show()
