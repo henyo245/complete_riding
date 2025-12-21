@@ -12,7 +12,7 @@ import argparse
 data_dir = "output"
 
 
-def main(prefix: str = "company_1_key_stations"):
+def main(prefix: str = "jrhokkaido"):
     # adjmatrix をヘッダ付きで読み込む（先頭列は駅コードのインデックス）
     adj_path = Path(data_dir, f"{prefix}_adjmatrix.csv")
     stations_path = Path(data_dir, f"{prefix}_stations.csv")
