@@ -1,0 +1,26 @@
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[project]
+name = "complete_riding"
+version = "0.1.0"
+description = "Railway graph processing and visualization tools for analyzing routes and complete riding problems"
+readme = "README.md"
+
+[project.dependencies]
+# runtime dependencies (pin minimally or leave flexible)
+pandas = "^2.0"
+numpy = "^1.25"
+networkx = "^3.0"
+matplotlib = "^3.8"
+japanize_matplotlib = "^1.0"
+
+[project.optional-dependencies]
+visual = [
+	"matplotlib>=3.0",
+	"japanize_matplotlib",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
