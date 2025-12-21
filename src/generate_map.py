@@ -5,6 +5,7 @@ import numpy as np
 import networkx as nx
 from pathlib import Path
 import math
+import argparse
 
 rsc_dir = Path(__file__).parent.parent / "rsc"
 out_dir = Path(__file__).parent.parent / "output"
@@ -24,48 +25,72 @@ company = Path(rsc_dir, "company20251015.csv")
 def preprocess_jr_hokkaido(
     line: pd.DataFrame, station: pd.DataFrame, join: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # JR北海道の路線コードを抽出する JR北海道...company_cd == 1 e_status == 0 運用中のみ
-    jrh_lines = line[(line["company_cd"] == 1) & (line["e_status"] == 0)]
-    # 海峡線は貨物駅のため削除
-    jrh_lines = jrh_lines[jrh_lines["line_cd"] != 11118]
+    # 保守的に既存の挙動を維持するため、汎用関数を呼び出す
+    return preprocess_company(
+        line, station, join, company_cd=1, exclude_line_cds=[11118]
+    )
 
-    # # 運用中の駅のみ抽出する e_status == 0 -> 宗谷本線が繋がらなくなるのでコメントアウト
-    # station = station[station["e_status"] == 0]
-    # 全国の駅からJR北海道の駅のみ抽出する JR北海道...company_cd == 1
-    jrh = station[["station_cd", "station_name", "line_cd", "lon", "lat"]]
-    jrh = pd.merge(jrh, jrh_lines, on="line_cd")
-    jrh = jrh[jrh["company_cd"] == 1]
-    jrh = jrh[
-        [
-            "station_cd",
-            "station_name",
-            "line_cd",
-            "lon_x",
-            "lat_x",
-            "line_name",
-            "line_color_c",
-            "line_color_t",
-        ]
-    ]
-    lon = jrh["lon_x"]
-    lat = jrh["lat_x"]
-    jrh["lon"] = lon
-    jrh["lat"] = lat
-    jrh = jrh[["station_cd", "station_name", "line_cd", "lon", "lat", "line_name"]]
 
-    # station_cd を station_g_cd に変換
-    station_cd_to_gcd = dict(zip(station["station_cd"], station["station_g_cd"]))
-    jrh["station_cd"] = jrh["station_cd"].map(station_cd_to_gcd)
-    jrh = jrh.drop_duplicates(subset="station_cd", keep="first")
+def preprocess_company(
+    line: pd.DataFrame,
+    station: pd.DataFrame,
+    join: pd.DataFrame,
+    company_cd: int,
+    exclude_line_cds: list[int] | None = None,
+    only_active_lines: bool = True,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    指定した `company_cd` に対応する路線・駅・接続情報を抽出する汎用前処理。
 
-    # JR北海道の接続辺を抽出する
-    jrh_join = join[join["line_cd"].isin(jrh_lines["line_cd"].tolist())]
-    jrh_join = jrh_join[["station_cd1", "station_cd2"]]
+    - `exclude_line_cds` が与えられた場合、その路線コードは除外する（例: 貨物線など）。
+    - `only_active_lines` が True のときは `e_status == 0` の路線のみを抽出する。
+    """
+    # company に属する路線を抽出
+    if only_active_lines:
+        company_lines = line[(line["company_cd"] == company_cd) & (line["e_status"] == 0)]
+    else:
+        company_lines = line[line["company_cd"] == company_cd]
 
-    jrh_join["station_cd1"] = jrh_join["station_cd1"].map(station_cd_to_gcd)
-    jrh_join["station_cd2"] = jrh_join["station_cd2"].map(station_cd_to_gcd)
+    if exclude_line_cds:
+        company_lines = company_lines[~company_lines["line_cd"].isin(exclude_line_cds)]
 
-    return jrh, jrh_join
+    # 駅情報を結合して該当 company の駅を抽出
+    subset_cols = ["station_cd", "station_name", "line_cd", "lon", "lat"]
+    if not set(subset_cols).issubset(set(station.columns)):
+        # station のカラムが期待通りでない場合は最小限で作る
+        subset_cols = [c for c in subset_cols if c in station.columns]
+
+    comp_stations = station[subset_cols]
+    comp_stations = pd.merge(comp_stations, company_lines, on="line_cd")
+    comp_stations = comp_stations[comp_stations["company_cd"] == company_cd]
+
+    # 列名の整備（元の jrh_hokkaido と同じ列名を作る）
+    rename_cols = {}
+    if "lon_x" in comp_stations.columns:
+        comp_stations["lon"] = comp_stations["lon_x"]
+    if "lat_x" in comp_stations.columns:
+        comp_stations["lat"] = comp_stations["lat_x"]
+
+    keep_cols = [c for c in ["station_cd", "station_name", "line_cd", "lon", "lat", "line_name"] if c in comp_stations.columns]
+    comp_stations = comp_stations[keep_cols]
+
+    # station_cd を station_g_cd に変換（グローバル station 引数と一致する前提）
+    if "station_g_cd" in station.columns:
+        station_cd_to_gcd = dict(zip(station["station_cd"], station["station_g_cd"]))
+        comp_stations["station_cd"] = comp_stations["station_cd"].map(station_cd_to_gcd)
+        comp_stations = comp_stations.drop_duplicates(subset="station_cd", keep="first")
+
+    # 接続データの抽出
+    comp_join = join[join["line_cd"].isin(company_lines["line_cd"].tolist())]
+    # 接続の station_cd を group id に変換しておく
+    if "station_g_cd" in station.columns:
+        comp_join["station_cd1"] = comp_join["station_cd1"].map(station_cd_to_gcd)
+        comp_join["station_cd2"] = comp_join["station_cd2"].map(station_cd_to_gcd)
+
+    # 最低限 station_cd 列のみを残す
+    comp_join = comp_join[["station_cd1", "station_cd2"]]
+
+    return comp_stations, comp_join
 
 
 # ネットワークグラフの作成
@@ -425,26 +450,46 @@ def save_reduced_adjmatrix_csv(
     return csv_path, list_path
 
 
-def main():
-    jrh_stations, jrh_join = preprocess_jr_hokkaido(line, station, join)
-    distance_matrix = calculate_distance_matrix(jrh_stations, jrh_join)
-    visualize_graph(jrh_stations, jrh_join, distance_matrix)
+def main(company_cd: int = 1, exclude_line_cds: list[int] | None = None):
+    # 選択された company_cd に基づいて前処理を行う
+    stations_sel, join_sel = preprocess_company(line, station, join, company_cd=company_cd, exclude_line_cds=exclude_line_cds)
+    distance_matrix = calculate_distance_matrix(stations_sel, join_sel)
+    visualize_graph(stations_sel, join_sel, distance_matrix)
 
     # 接続駅と終点駅を抽出
-    key_stations, key_join = extract_key_stations(jrh_stations, jrh_join)
+    key_stations, key_join = extract_key_stations(stations_sel, join_sel)
     # 接続駅と終点駅の距離を計算
-    reduced_adj = build_reduced_adj_matrix(jrh_stations, jrh_join, key_stations)
+    reduced_adj = build_reduced_adj_matrix(stations_sel, join_sel, key_stations)
     visualize_graph(key_stations, key_join, reduced_adj)
+    # ファイル名は会社コードを含めて一意化
+    prefix = f"company_{company_cd}_key_stations"
     save_reduced_adjmatrix_csv(
-        reduced_adj, key_stations, out_dir, prefix="jrh_key_stations"
+        reduced_adj, key_stations, out_dir, prefix=prefix
     )
 
     # 路線に沿った距離を計算するため，全駅のグラフを辿ってキー駅間の最短経路距離を求める
     key_distance_matrix = compute_key_station_pairwise_distances(
-        jrh_stations, jrh_join, key_stations
+        stations_sel, join_sel, key_stations
     )
     # visualize_graph(key_stations, key_join, key_distance_matrix)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Generate maps for a selected railway company (by company_cd).")
+    parser.add_argument("--company-cd", type=int, default=1, help="company_cd to process (default: 1 = JR Hokkaido)")
+    parser.add_argument(
+        "--exclude-lines",
+        type=str,
+        default=None,
+        help="comma-separated line_cd values to exclude (e.g. 11118)",
+    )
+    args = parser.parse_args()
+
+    exclude_list = None
+    if args.exclude_lines:
+        try:
+            exclude_list = [int(x.strip()) for x in args.exclude_lines.split(",") if x.strip()]
+        except ValueError:
+            exclude_list = None
+
+    main(company_cd=args.company_cd, exclude_line_cds=exclude_list)
