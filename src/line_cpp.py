@@ -6,13 +6,18 @@ from visualize import Visualizer
 import pandas as pd
 from pathlib import Path
 import numpy as np
+import argparse
+
 
 data_dir = "output"
 
 
-def main():
+def main(prefix: str = "jrhokkaido"):
     # adjmatrix をヘッダ付きで読み込む（先頭列は駅コードのインデックス）
-    adj_df = pd.read_csv(Path(data_dir, "jrh_key_stations_adjmatrix.csv"), index_col=0)
+    adj_path = Path(data_dir, f"{prefix}_adjmatrix.csv")
+    stations_path = Path(data_dir, f"{prefix}_stations.csv")
+
+    adj_df = pd.read_csv(adj_path, index_col=0)
     # 'inf' 文字列があれば np.inf に置換し、数値化
     adj_df = adj_df.replace("inf", np.inf).astype(float)
 
@@ -20,13 +25,14 @@ def main():
     station_codes = adj_df.index.tolist()
 
     # 隣接行列をリスト形式に変換して CPP に渡す
-    adj_matrix = adj_df.values.tolist()
+    adj_matrix_list = adj_df.values.tolist()
+    adj_matrix_np = adj_df.values.astype(float)
 
     cpp = CPP()
-    shortest_path_matrix, pairs, total_edge_weight = cpp.cpp_pipeline(adj_matrix)
+    shortest_path_matrix, pairs, total_edge_weight = cpp.cpp_pipeline(adj_matrix_list)
 
     # 駅情報（駅名, lon, lat を含む想定）を読み込む
-    station_info = pd.read_csv(Path(data_dir, "jrh_key_stations_stations.csv"))
+    station_info = pd.read_csv(stations_path)
     station_name_map = dict(zip(station_info["station_cd"], station_info["station_name"]))
 
     # 結果表示
@@ -41,14 +47,14 @@ def main():
     # 可視化: pairs はインデックス参照なので station_codes を使って station_cd タプルを作る
     selected_pairs_codes = [(station_codes[u], station_codes[v]) for u, v in pairs]
 
-    # shortest_path_matrix を numpy 配列に変換して渡す（visualize 側は行列を期待する）
-    dist_matrix = np.array(shortest_path_matrix, dtype=float)
-
     # visualize using Visualizer (station_info contains lon/lat)
     Visualizer().visualize_graph_with_selected_pairs(
-        station_info, None, distance_matrix=adj_matrix, selected_pairs=selected_pairs_codes
+        station_info, None, distance_matrix=adj_matrix_np, selected_pairs=selected_pairs_codes
     )
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run CPP on reduced adjacency matrix CSVs produced by generate_map.py")
+    parser.add_argument("--prefix", type=str, default="company_1_key_stations", help="prefix for files in output/, e.g. company_1_key_stations")
+    args = parser.parse_args()
+    main(prefix=args.prefix)

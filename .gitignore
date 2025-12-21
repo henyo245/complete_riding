@@ -215,8 +215,8 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Output directorys
-output/
+# # Output directorys
+# output/
 
 # resource directorys
 rsc/
