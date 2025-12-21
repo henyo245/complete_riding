@@ -118,3 +118,16 @@ pytest -q
 ---
 
 この README に追加してほしい項目や、実行環境の細かい指定（仮想環境の設定例や `pyproject.toml` を使ったインストール手順）があれば教えてください。
+
+## 参考にした記事
+
+以下の記事を本プロジェクトの実装・設計の際に参考にしました。実装方針やアルゴリズム、可視化手法の理解に役立っています（各記事の著者に感謝します）。
+
+- 【競技プログラミング】中国人郵便配達問題をやってみた【組合せ最適化 — Qiita
+  - 概要: 最小完全マッチングや Eulerian path に関する考え方、CPP に関する解説がまとまっています。本リポジトリの `cpp.py` の実装やアルゴリズム選定の参考にしました。
+  - URL: https://qiita.com/kindamu24005/items/f87956efac5bd43aabbb
+
+- 
+鉄道路線データを可視化し、最短経路問題を解く (Python+Pandas+NetworkX) — Qiita
+  - 概要: 鉄道路線データの前処理・`networkx` と `matplotlib` を用いた可視化手法の具体例が示されています。`generate_map.py` / `visualize.py` の実装方針や表示のアイデアを参考にしました。
+  - URL: https://qiita.com/galileo15640215/items/d7737d3e08c7bb3dba80
