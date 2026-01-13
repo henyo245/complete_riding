@@ -178,7 +178,6 @@ Saved visualization to: output/images/company_1_key_stations_line_cpp_selected_p
   - 概要: 最小完全マッチングや Eulerian path に関する考え方、CPP に関する解説がまとまっています。本リポジトリの `cpp.py` の実装やアルゴリズム選定の参考にしました。
   - URL: https://qiita.com/kindamu24005/items/f87956efac5bd43aabbb
 
-- 
-鉄道路線データを可視化し、最短経路問題を解く (Python+Pandas+NetworkX) — Qiita
+- 鉄道路線データを可視化し、最短経路問題を解く (Python+Pandas+NetworkX) — Qiita
   - 概要: 鉄道路線データの前処理・`networkx` と `matplotlib` を用いた可視化手法の具体例が示されています。`generate_map.py` / `visualize.py` の実装方針や表示のアイデアを参考にしました。
   - URL: https://qiita.com/galileo15640215/items/d7737d3e08c7bb3dba80
