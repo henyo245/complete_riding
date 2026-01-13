@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import japanize_matplotlib
 import numpy as np
 import networkx as nx
 from pathlib import Path
@@ -13,9 +12,7 @@ out_dir = Path(__file__).parent.parent / "output"
 # csvファイルからpandas形式のテーブルを作成
 station = pd.read_csv(Path(rsc_dir, "station20251015free.csv"))
 join = pd.read_csv(Path(rsc_dir, "join20250916.csv"))
-pref = pd.read_csv(Path(rsc_dir, "pref.csv"))
 line = pd.read_csv(Path(rsc_dir, "line20250604free.csv"))
-company = Path(rsc_dir, "company20251015.csv")
 
 """
 全国の路線を考える前に、小規模の問題としてJR北海道の路線を抽出し、作成する
