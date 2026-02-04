@@ -301,7 +301,7 @@ def extract_key_stations(
         (join["station_cd1"].isin(key_stations))
         | (join["station_cd2"].isin(key_stations))
     ]
-
+    
     return key_stations_df, key_join
 
 
@@ -365,8 +365,9 @@ def build_reduced_adj_matrix(
 ) -> np.ndarray:
     """
     key_stations 間の縮約グラフの隣接行列を作る。
-    縮約グラフでは、キー駅ペア間の最短経路が他のキー駅を経由しない場合にのみ
-    そのペアを直接接続し、重みは経路長（辺の重みは各駅間のユークリッド距離）とする。
+    BFS （幅優先探索、Breadth-First Search）を使用して、各キー駅から出発し、最初に到達する別のキー駅までの
+    路線セグメント距離を計算する。中間に他のキー駅が含まれない場合のみ
+    そのペアを直接接続する。
 
     戻り値: (k,k) の numpy 行列（キー駅の順序は key_stations の順序に対応）。経路が無ければ np.inf。
     """
@@ -391,32 +392,34 @@ def build_reduced_adj_matrix(
     np.fill_diagonal(adj, 0.0)
 
     key_set = set(key_list)
+    key_to_idx = {cd: idx for idx, cd in enumerate(key_list)}
 
-    # 各キー駅ペアについて最短経路を取得し、中間ノードにキー駅が含まれない場合のみ辺を張る
-    for i in range(k):
-        for j in range(i + 1, k):
-            s_i = key_list[i]
-            s_j = key_list[j]
-            try:
-                path = nx.shortest_path(G_full, source=s_i, target=s_j, weight="weight")
-                # 中間ノードをチェック
-                mid_nodes = path[1:-1]
-                contains_key = any(n in key_set for n in mid_nodes)
-                if not contains_key:
-                    # 距離の合計を計算
-                    d = 0.0
-                    for a, b in zip(path[:-1], path[1:]):
-                        d += G_full[a][b]["weight"]
-                    adj[i, j] = d
-                    adj[j, i] = d
-                else:
-                    # 中間に別のキー駅がある -> 縮約グラフでは直接辺を張らない
-                    adj[i, j] = INF
-                    adj[j, i] = INF
-            except (nx.NetworkXNoPath, nx.NodeNotFound):
-                adj[i, j] = INF
-                adj[j, i] = INF
-
+    # 各キー駅から BFS で最初に到達する別のキー駅を探す
+    for i, start_key in enumerate(key_list):
+        # BFS を実行
+        queue = [(start_key, 0.0)]  # (current_node, accumulated_distance)
+        visited = {start_key}
+        
+        while queue:
+            current, dist_so_far = queue.pop(0)
+            
+            # 隣接ノードを探索
+            for neighbor in G_full.neighbors(current):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    edge_weight = G_full[current][neighbor]["weight"]
+                    new_dist = dist_so_far + edge_weight
+                    
+                    # neighbor がキー駅か確認
+                    if neighbor in key_set and neighbor != start_key:
+                        # 最初に到達したキー駅を記録
+                        j = key_to_idx[neighbor]
+                        adj[i, j] = new_dist
+                        adj[j, i] = new_dist
+                    else:
+                        # キー駅でなければ続けて探索
+                        queue.append((neighbor, new_dist))
+    
     return adj
 
 
