@@ -290,6 +290,7 @@ def main():
     for row in shortest_paths:
         print(" ".join(f"{x:>3}" for x in row))
     print("最小完全マッチングのペア:", pairs)
+    print("全エッジの重み合計 + 最小完全マッチングの重み合計 =", total_edge_weight)
 
     visualize_graph_from_adjmatrix(graph_matrix, selected_pairs=pairs)
 
