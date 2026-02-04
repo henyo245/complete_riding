@@ -211,7 +211,12 @@ class CPP:
         )
 
         # 最小距離和を計算
-        total_edge_weight = self.sum_all_edges_undirected(adj_matrix) + best_cost
+        all_edge_cost = self.sum_all_edges_undirected(adj_matrix)
+        total_edge_weight = all_edge_cost + best_cost
+        
+        print("全エッジの重み合計", all_edge_cost)
+        print("最小完全マッチングの重み合計", best_cost)
+        print("全エッジの重み合計 + 最小完全マッチングの重み合計 =", total_edge_weight)
 
         return shortest_path_matrix, result_pairs, total_edge_weight        
         
