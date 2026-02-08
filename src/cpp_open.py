@@ -9,7 +9,7 @@ from typing import List, Tuple, Optional
 import math
 
 from cpp import CPP
-from visualize_colored import VisualizerColored
+from visualize import Visualizer
 
 
 def cpp_pipeline_open(
@@ -90,7 +90,7 @@ def visualize_graph_from_adjmatrix(
     引数は `src/cpp.py` の `visualize_graph_from_adjmatrix` に合わせつつ、
     開始ノード／終了ノードの色やサイズ指定を追加しています。
     """
-    VisualizerColored().visualize_graph_from_adjmatrix(
+    Visualizer().visualize_graph_from_adjmatrix(
         adj_matrix,
         seed=seed,
         selected_pairs=selected_pairs,

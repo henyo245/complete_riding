@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 
 from cpp_open import cpp_pipeline_open
-from visualize_colored import VisualizerColored
+from visualize import Visualizer
 
 data_dir = "output"
 
@@ -44,7 +44,7 @@ def find_station_index(station_codes: List, code: str) -> int:
     raise ValueError(f"station code {code} not found in station list")
 
 
-def main(prefix: str, start_cd: str, end_cd: str, method: str = "auto"):
+def main(prefix: str, start_cd: int, end_cd: int, method: str = "auto"):
     adj_path = Path(data_dir, f"{prefix}_adjmatrix.csv")
     stations_path = Path(data_dir, f"{prefix}_stations.csv")
 
@@ -79,7 +79,17 @@ def main(prefix: str, start_cd: str, end_cd: str, method: str = "auto"):
 
     # 可視化: cpp_open の visualize_graph_from_adjmatrix を使う
     image_path = Path("output") / "images" / f"{prefix}_line_cpp_open_selected.png"
-    VisualizerColored().visualize_graph_with_selected_pairs(
+    Visualizer().visualize_graph_of_stations(
+        stations=station_info,
+        join=None,
+        distance_matrix=adj_df.values.astype(float),
+        start=start_cd,
+        end=end_cd,
+        start_color="lightgreen",
+        end_color="tomato",
+        save_path=str(image_path),
+    )
+    Visualizer().visualize_graph_with_selected_pairs(
         stations=station_info,
         join=None,
         distance_matrix=adj_df.values.astype(float),

@@ -19,19 +19,23 @@ class Visualizer:
         distance_matrix: Optional[np.ndarray] = None,
         figsize: Tuple[int, int] = (10, 10),
         save_path: Optional[str] = None,
+        start_nodes: Optional[List] = None,
+        end_nodes: Optional[List] = None,
+        start_color: str = "lightgreen",
+        end_color: str = "tomato",
+        start: Optional[int] = None,
+        end: Optional[int] = None,
     ):
+        """全体グラフを描画し、任意の開始ノード/終了ノードを別色で描画する。`start_nodes`/`end_nodes`は駅コードまたは駅名のリストを受け取る。"""
         G = nx.Graph()
-        # 頂点を駅名にする
         G.add_nodes_from(stations["station_name"])
-        # plot の座標を設定（存在しない場合は None にしておく）
+
         pos = None
         if "lon" in stations.columns and "lat" in stations.columns:
             pos = {row["station_name"]: (row["lon"], row["lat"]) for _, row in stations.iterrows()}
 
-        # 駅コードと駅名の辞書
         cd_to_name = dict(zip(stations["station_cd"], stations["station_name"]))
 
-        # グラフに辺を追加する
         if distance_matrix is not None:
             station_list = stations["station_cd"].tolist()
             for i in range(len(station_list)):
@@ -53,17 +57,39 @@ class Visualizer:
                 if name1 and name2:
                     G.add_edge(name1, name2)
 
-        # レイアウトが未定義なら作成
         if pos is None:
             pos = nx.spring_layout(G, seed=self.seed)
 
-        # グラフの描画
         plt.figure(figsize=figsize)
+
+        # ベースノード描画
         nx.draw_networkx_nodes(G, pos, node_size=50)
+
+        # start/end が指定されていればそれぞれ別色で上書き描画
+        start_nodes = set()
+        end_nodes = set()
+        if start is not None:
+            sname = stations[stations["station_cd"] == int(start)]["station_name"].values[0]
+            if sname in G.nodes:
+                start_nodes = {sname}
+            else:
+                start_nodes = set()
+        if end is not None:
+            ename = stations[stations["station_cd"] == int(end)]["station_name"].values[0]
+            if ename in G.nodes:
+                end_nodes = {ename}
+            else:
+                end_nodes = set()
+
+        if start_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(start_nodes), node_color=start_color, node_size=50)
+        if end_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(end_nodes), node_color=end_color, node_size=50)
+
+
         nx.draw_networkx_labels(G, pos, font_size=8, font_family="IPAexGothic")
         nx.draw_networkx_edges(G, pos)
 
-        # エッジに距離ラベルを付ける（weight 属性があれば小数点2桁で表示）
         edge_labels = {}
         for u, v, data in G.edges(data=True):
             w = data.get("weight")
@@ -89,7 +115,12 @@ class Visualizer:
         selected_width: int = 2,
         selected_alpha: float = 0.9,
         save_path: Optional[str] = None,
+        start_color: str = "lightgreen",
+        end_color: str = "tomato",
+        start: Optional[int] = None,
+        end: Optional[int] = None,
     ):
+        """`selected_pairs` の start/end ノードをそれぞれ別色で描画するバージョン。"""
         G = nx.Graph()
         G.add_nodes_from(stations["station_name"])
         pos = None
@@ -129,6 +160,7 @@ class Visualizer:
 
         highlight_edges = set()
         dashed_lines = []
+
         if selected_pairs:
             for a, b in selected_pairs:
                 name_a = cd_to_name.get(a, a)
@@ -168,6 +200,27 @@ class Visualizer:
             xv, yv = pos[v]
             plt.plot([xu, xv], [yu, yv], linestyle="--", color=selected_color, alpha=0.7)
 
+        # start/end が指定されていればそれぞれ別色で上書き描画
+        start_nodes = set()
+        end_nodes = set()
+        if start is not None:
+            sname = stations[stations["station_cd"] == int(start)]["station_name"].values[0]
+            if sname in G.nodes:
+                start_nodes = {sname}
+            else:
+                start_nodes = set()
+        if end is not None:
+            ename = stations[stations["station_cd"] == int(end)]["station_name"].values[0]
+            if ename in G.nodes:
+                end_nodes = {ename}
+            else:
+                end_nodes = set()
+
+        if start_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(start_nodes), node_color=start_color, node_size=50)
+        if end_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(end_nodes), node_color=end_color, node_size=50)
+
         edge_labels = {}
         for u, v, data in G.edges(data=True):
             w = data.get("weight")
@@ -184,9 +237,20 @@ class Visualizer:
         plt.show()
 
     def visualize_graph_from_adjmatrix(
-        self, adj_matrix: List[List], seed: int = 0, selected_pairs: Optional[List[Tuple]] = None,
-        selected_color: str = "red", selected_width: int = 3, selected_alpha: float = 0.9,
+        self,
+        adj_matrix: List[List],
+        seed: int = 0,
+        selected_pairs: Optional[List[Tuple]] = None,
+        selected_color: str = "red",
+        selected_width: int = 3,
+        selected_alpha: float = 0.9,
         save_path: Optional[str] = None,
+        start_color: str = "lightgreen",
+        end_color: str = "tomato",
+        start_size: int = 700,
+        end_size: int = 300,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
     ):
         n = len(adj_matrix)
         G = nx.Graph()
@@ -208,6 +272,8 @@ class Visualizer:
 
         highlight_edges = set()
         dashed_lines = []
+
+
         if selected_pairs:
             for u, v in selected_pairs:
                 if u not in G.nodes or v not in G.nodes:
@@ -236,6 +302,20 @@ class Visualizer:
             xu, yu = pos[u]
             xv, yv = pos[v]
             plt.plot([xu, xv], [yu, yv], linestyle="--", color=selected_color, alpha=0.7)
+            
+        # start/end （全経路の開始/終了を表すノード）を指定
+        start_nodes = set()
+        end_nodes = set()
+        if start is not None:
+            start_nodes = {start} if start in G.nodes else set()
+        if end is not None:
+            end_nodes = {end} if end in G.nodes else set()
+
+        # start/end を別色で描画
+        if start_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(start_nodes), node_color=start_color, node_size=start_size)
+        if end_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(end_nodes), node_color=end_color, node_size=end_size)
 
         edge_labels = nx.get_edge_attributes(G, "weight")
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
