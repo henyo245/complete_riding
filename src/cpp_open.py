@@ -78,7 +78,7 @@ def visualize_graph_from_adjmatrix(
     selected_width: int = 3,
     selected_alpha: float = 0.9,
     start_color: str = "lightgreen",
-    end_color: str = "royalblue",
+    end_color: str = "tomato",
     start_size: int = 700,
     end_size: int = 700,
     start: Optional[int] = None,

@@ -21,10 +21,12 @@ class VisualizerColored:
         save_path: Optional[str] = None,
         start_nodes: Optional[List] = None,
         end_nodes: Optional[List] = None,
-        start_color: str = "green",
-        end_color: str = "red",
+        start_color: str = "lightgreen",
+        end_color: str = "tomato",
         start_size: int = 150,
         end_size: int = 150,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
     ):
         """全体グラフを描画し、任意の開始ノード/終了ノードを別色で描画する。`start_nodes`/`end_nodes`は駅コードまたは駅名のリストを受け取る。"""
         G = nx.Graph()
@@ -80,6 +82,26 @@ class VisualizerColored:
         starts = resolve_names(start_nodes)
         ends = resolve_names(end_nodes)
 
+        # 単一の start/end 指定があればそれを優先（駅コードまたは駅名を受け取る）
+        def resolve_single(item: Optional[str]) -> Optional[str]:
+            if item is None:
+                return None
+            # item が駅コードなら対応する駅名を返す
+            return cd_to_name.get(item, item)
+
+        if start is not None:
+            sname = resolve_single(start)
+            if sname in G.nodes:
+                starts = [sname]
+            else:
+                starts = []
+        if end is not None:
+            ename = resolve_single(end)
+            if ename in G.nodes:
+                ends = [ename]
+            else:
+                ends = []
+
         if starts:
             nx.draw_networkx_nodes(G, pos, nodelist=starts, node_color=start_color, node_size=start_size)
         if ends:
@@ -113,10 +135,10 @@ class VisualizerColored:
         selected_width: int = 2,
         selected_alpha: float = 0.9,
         save_path: Optional[str] = None,
-        start_color: str = "green",
-        end_color: str = "red",
-        start_size: int = 150,
-        end_size: int = 150,
+        start_color: str = "lightgreen",
+        end_color: str = "tomato",
+        start: Optional[int] = None,
+        end: Optional[int] = None,
     ):
         """`selected_pairs` の start/end ノードをそれぞれ別色で描画するバージョン。"""
         G = nx.Graph()
@@ -152,16 +174,12 @@ class VisualizerColored:
             pos = nx.spring_layout(G, seed=self.seed)
 
         plt.figure(figsize=(10, 10))
-        nx.draw_networkx_nodes(G, pos, node_size=50, node_color="#bbbbbb")
+        nx.draw_networkx_nodes(G, pos, node_size=50)
         nx.draw_networkx_labels(G, pos, font_size=8, font_family="IPAexGothic")
         nx.draw_networkx_edges(G, pos, edge_color="#888888")
 
         highlight_edges = set()
         dashed_lines = []
-
-        # start/end ノード集合（表示用）
-        start_nodes = set()
-        end_nodes = set()
 
         if selected_pairs:
             for a, b in selected_pairs:
@@ -169,8 +187,6 @@ class VisualizerColored:
                 name_b = cd_to_name.get(b, b)
                 if name_a not in G.nodes or name_b not in G.nodes:
                     continue
-                start_nodes.add(name_a)
-                end_nodes.add(name_b)
                 try:
                     path = nx.shortest_path(G, source=name_a, target=name_b, weight="weight")
                 except (nx.NetworkXNoPath, nx.NodeNotFound):
@@ -204,11 +220,24 @@ class VisualizerColored:
             xv, yv = pos[v]
             plt.plot([xu, xv], [yu, yv], linestyle="--", color=selected_color, alpha=0.7)
 
+        if start is not None:
+            sname = stations[stations["station_cd"] == int(start)]["station_name"].values[0]
+            if sname in G.nodes:
+                start_nodes = {sname}
+            else:
+                start_nodes = set()
+        if end is not None:
+            ename = stations[stations["station_cd"] == int(end)]["station_name"].values[0]
+            if ename in G.nodes:
+                end_nodes = {ename}
+            else:
+                end_nodes = set()
+
         # start/end を別色で上書き描画
         if start_nodes:
-            nx.draw_networkx_nodes(G, pos, nodelist=list(start_nodes), node_color=start_color, node_size=start_size)
+            nx.draw_networkx_nodes(G, pos, nodelist=list(start_nodes), node_color=start_color, node_size=50)
         if end_nodes:
-            nx.draw_networkx_nodes(G, pos, nodelist=list(end_nodes), node_color=end_color, node_size=end_size)
+            nx.draw_networkx_nodes(G, pos, nodelist=list(end_nodes), node_color=end_color, node_size=50)
 
         edge_labels = {}
         for u, v, data in G.edges(data=True):
@@ -234,8 +263,8 @@ class VisualizerColored:
         selected_width: int = 3,
         selected_alpha: float = 0.9,
         save_path: Optional[str] = None,
-        start_color: str = "green",
-        end_color: str = "blue",
+        start_color: str = "lightgreen",
+        end_color: str = "tomato",
         start_size: int = 700,
         end_size: int = 300,
         start: Optional[int] = None,
