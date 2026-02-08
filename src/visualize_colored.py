@@ -23,10 +23,8 @@ class VisualizerColored:
         end_nodes: Optional[List] = None,
         start_color: str = "lightgreen",
         end_color: str = "tomato",
-        start_size: int = 150,
-        end_size: int = 150,
-        start: Optional[str] = None,
-        end: Optional[str] = None,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
     ):
         """全体グラフを描画し、任意の開始ノード/終了ノードを別色で描画する。`start_nodes`/`end_nodes`は駅コードまたは駅名のリストを受け取る。"""
         G = nx.Graph()
@@ -65,47 +63,29 @@ class VisualizerColored:
         plt.figure(figsize=figsize)
 
         # ベースノード描画
-        nx.draw_networkx_nodes(G, pos, node_size=50, node_color="#bbbbbb")
+        nx.draw_networkx_nodes(G, pos, node_size=50)
 
         # start/end が指定されていればそれぞれ別色で上書き描画
-        def resolve_names(items: Optional[List]):
-            if not items:
-                return []
-            resolved = []
-            for it in items:
-                if it in cd_to_name:
-                    resolved.append(cd_to_name[it])
-                else:
-                    resolved.append(it)
-            return [n for n in resolved if n in G.nodes]
-
-        starts = resolve_names(start_nodes)
-        ends = resolve_names(end_nodes)
-
-        # 単一の start/end 指定があればそれを優先（駅コードまたは駅名を受け取る）
-        def resolve_single(item: Optional[str]) -> Optional[str]:
-            if item is None:
-                return None
-            # item が駅コードなら対応する駅名を返す
-            return cd_to_name.get(item, item)
-
+        start_nodes = set()
+        end_nodes = set()
         if start is not None:
-            sname = resolve_single(start)
+            sname = stations[stations["station_cd"] == int(start)]["station_name"].values[0]
             if sname in G.nodes:
-                starts = [sname]
+                start_nodes = {sname}
             else:
-                starts = []
+                start_nodes = set()
         if end is not None:
-            ename = resolve_single(end)
+            ename = stations[stations["station_cd"] == int(end)]["station_name"].values[0]
             if ename in G.nodes:
-                ends = [ename]
+                end_nodes = {ename}
             else:
-                ends = []
+                end_nodes = set()
 
-        if starts:
-            nx.draw_networkx_nodes(G, pos, nodelist=starts, node_color=start_color, node_size=start_size)
-        if ends:
-            nx.draw_networkx_nodes(G, pos, nodelist=ends, node_color=end_color, node_size=end_size)
+        if start_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(start_nodes), node_color=start_color, node_size=50)
+        if end_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=list(end_nodes), node_color=end_color, node_size=50)
+
 
         nx.draw_networkx_labels(G, pos, font_size=8, font_family="IPAexGothic")
         nx.draw_networkx_edges(G, pos)
@@ -220,6 +200,9 @@ class VisualizerColored:
             xv, yv = pos[v]
             plt.plot([xu, xv], [yu, yv], linestyle="--", color=selected_color, alpha=0.7)
 
+        # start/end が指定されていればそれぞれ別色で上書き描画
+        start_nodes = set()
+        end_nodes = set()
         if start is not None:
             sname = stations[stations["station_cd"] == int(start)]["station_name"].values[0]
             if sname in G.nodes:
@@ -233,7 +216,6 @@ class VisualizerColored:
             else:
                 end_nodes = set()
 
-        # start/end を別色で上書き描画
         if start_nodes:
             nx.draw_networkx_nodes(G, pos, nodelist=list(start_nodes), node_color=start_color, node_size=50)
         if end_nodes:
