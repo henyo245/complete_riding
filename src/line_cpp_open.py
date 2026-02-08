@@ -75,20 +75,8 @@ def main(prefix: str, start_cd: int, end_cd: int, method: str = "auto"):
     # 可視化: pairs はインデックス参照なので station_codes を使って station_cd タプルを作る
     selected_pairs_codes = [(station_codes[u], station_codes[v]) for u, v in pairs]
 
-    print("全エッジ + マッチング の合計:", total_edge_weight)
-
     # 可視化: cpp_open の visualize_graph_from_adjmatrix を使う
     image_path = Path("output") / "images" / f"{prefix}_line_cpp_open_selected.png"
-    Visualizer().visualize_graph_of_stations(
-        stations=station_info,
-        join=None,
-        distance_matrix=adj_df.values.astype(float),
-        start=start_cd,
-        end=end_cd,
-        start_color="lightgreen",
-        end_color="tomato",
-        save_path=str(image_path),
-    )
     Visualizer().visualize_graph_with_selected_pairs(
         stations=station_info,
         join=None,

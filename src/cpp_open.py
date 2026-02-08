@@ -65,7 +65,13 @@ def cpp_pipeline_open(
         shortest_paths, adjusted_odd, method=method
     )
 
-    total_edge_weight = cpp.sum_all_edges_undirected(adj_matrix) + best_cost
+    # 最小距離和を計算
+    all_edge_cost = cpp.sum_all_edges_undirected(adj_matrix)
+    total_edge_weight = all_edge_cost + best_cost
+    
+    print("全エッジの重み合計", all_edge_cost)
+    print("最小完全マッチングの重み合計", best_cost)
+    print("全エッジの重み合計 + 最小完全マッチングの重み合計 =", total_edge_weight)
 
     return shortest_paths, pairs, total_edge_weight
 
